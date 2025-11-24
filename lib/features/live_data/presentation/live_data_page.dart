@@ -1,3 +1,23 @@
+/// Bildschirm (UI) für die Anzeige der Live-Daten.
+///
+/// Diese Seite beobachtet den Riverpod-State aus
+/// [liveDataNotifierProvider] und reagiert dynamisch auf
+/// verschiedene Zustände:
+///
+/// * **Ladezustand** → zeigt einen CircularProgressIndicator.
+/// * **Fehlerzustand** → zeigt eine Fehlermeldung und einen Button,
+///   um das Laden erneut zu starten.
+/// * **Datenzustand** → zeigt Temperatur, Luftfeuchte und Wasserstand.
+/// * **Initialzustand** → zeigt einen Button „Daten laden“.
+///
+/// Die UI enthält selbst keinerlei Logik zum Datenabruf.
+/// Stattdessen ruft sie Methoden des StateNotifiers auf, z. B.:
+/// `ref.read(liveDataNotifierProvider.notifier).load()`.
+///
+/// Dadurch bleibt die Darstellung klar von API- und Datenlogik getrennt.
+/// Dies ist ideal für Wartbarkeit, Testbarkeit und eine saubere
+/// Architektur.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/live_data_providers.dart';

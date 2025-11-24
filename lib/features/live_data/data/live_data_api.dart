@@ -1,12 +1,37 @@
+/// Stellt die HTTP-Kommunikation für das Feature "Live Data" bereit.
+///
+/// Diese Klasse ist ausschließlich dafür zuständig, Requests an die
+/// Backend-API zu senden und die rohen JSON-Antworten zurückzugeben.
+/// Sie enthält keinerlei Business-Logik – diese befindet sich im Repository.
+///
+/// Verwendet wird standardmäßig ein [http.Client], der optional beim
+/// Erstellen der Klasse überschrieben werden kann (z. B. für Tests).
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/config/environment.dart';
 
 class LiveDataApi {
+  /// HTTP-Client, über den alle Requests laufen.
   final http.Client _client;
 
+  /// Erstellt eine neue Instanz der [LiveDataApi].
+  ///
+  /// Wenn kein eigener [http.Client] übergeben wird, wird automatisch
+  /// ein Standard-Client erzeugt.
   LiveDataApi({http.Client? client}) : _client = client ?? http.Client();
 
+  /// Ruft den Endpoint `/actual/live-data` des Backends auf und gibt die
+  /// Antwort als dekodiertes JSON-Objekt zurück.
+  ///
+  /// Ablauf:
+  /// 1. URL wird aus der [Environment.apiBaseUrl] + Endpoint gebaut.
+  /// 2. GET-Request wird ausgeführt.
+  /// 3. Bei Statuscode ≠ 200 wird eine Exception geworfen.
+  /// 4. Der Response-Body wird als `Map<String, dynamic>` zurückgegeben.
+  ///
+  /// Diese Methode liefert nur rohes JSON. Das Mapping in typisierte
+  /// Datenobjekte erfolgt im Repository.
   Future<Map<String, dynamic>> fetchLiveData() async {
     final uri = Uri.parse('${Environment.apiBaseUrl}/actual/live-data');
     final response = await _client.get(uri);

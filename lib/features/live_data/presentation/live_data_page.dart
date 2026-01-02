@@ -22,14 +22,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/live_data_providers.dart';
 
-class LiveDataPage extends ConsumerWidget {
+class LiveDataPage extends ConsumerStatefulWidget {
   const LiveDataPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LiveDataPage> createState() => _LiveDataPageState();
+}
+
+class _LiveDataPageState extends ConsumerState<LiveDataPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Daten automatisch beim Öffnen laden
+    Future.microtask(() {
+      ref.read(liveDataNotifierProvider.notifier).load();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(liveDataNotifierProvider);
 
     Widget body;
+
     if (state.isLoading) {
       body = const CircularProgressIndicator();
     } else if (state.errorMessage != null) {
@@ -62,6 +77,8 @@ class LiveDataPage extends ConsumerWidget {
         ],
       );
     } else {
+      // Sollte praktisch nicht mehr auftreten,
+      // weil wir automatisch laden – bleibt als Fallback
       body = ElevatedButton(
         onPressed: () =>
             ref.read(liveDataNotifierProvider.notifier).load(),

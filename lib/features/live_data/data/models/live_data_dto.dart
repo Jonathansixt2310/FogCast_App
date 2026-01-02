@@ -1,36 +1,52 @@
-/// Repräsentiert eine Momentaufnahme der Live-Daten,
-/// wie sie von der Backend-API zurückgegeben werden.
-///
-/// Dieses DTO (Data Transfer Object) dient als stark typisierte
-/// Hülle um das JSON, das z.B. von `/actual/live-data` kommt.
 class LiveDataDto {
-  /// Aktuelle Temperatur in Grad Celsius.
-  final double temperature;
+  final double temperature; // °C
+  final double humidity;    // %
+  final double waterLevel;  // m
 
-  /// Aktuelle Luftfeuchtigkeit in Prozent.
-  final double humidity;
-
-  /// Aktueller Wasserstand (Einheit abhängig von der API,
-  /// z.B. Meter oder Zentimeter).
-  final double waterLevel;
-
-  /// Erstellt ein neues [LiveDataDto] mit allen erforderlichen Werten.
   LiveDataDto({
     required this.temperature,
     required this.humidity,
     required this.waterLevel,
   });
 
-  /// Baut ein [LiveDataDto] aus einer JSON-Map, wie sie von der API kommt.
-  ///
-  /// Erwartet, dass [json] die Keys `temperature`, `humidity`
-  /// und `water_level` enthält. Zahlenwerte werden sicher zu [double]
-  /// gecastet.
-  factory LiveDataDto.fromJson(Map<String, dynamic> json) {
+  /// Baut ein DTO aus der API-Liste:
+  /// [{"name":"temperature","value":"3.0", ...}, ...]
+  factory LiveDataDto.fromList(List<dynamic> items) {
+    double? temp;
+    double? hum;
+    double? water;
+
+    for (final item in items) {
+      final map = item as Map<String, dynamic>;
+      final name = map['name'] as String?;
+      final valueStr = map['value']?.toString();
+
+      if (name == null || valueStr == null) continue;
+
+      final value = double.tryParse(valueStr);
+      if (value == null) continue;
+
+      switch (name) {
+        case 'temperature':
+          temp = value;
+          break;
+        case 'humidity':
+          hum = value * 100.0; // 0.678 → 67.8 %
+          break;
+        case 'water_level':
+          water = value / 100.0; // cm → m
+          break;
+      }
+    }
+
+    if (temp == null || hum == null || water == null) {
+      throw Exception('LiveData unvollständig');
+    }
+
     return LiveDataDto(
-      temperature: (json['temperature'] as num).toDouble(),
-      humidity: (json['humidity'] as num).toDouble(),
-      waterLevel: (json['water_level'] as num).toDouble(),
+      temperature: temp,
+      humidity: hum,
+      waterLevel: water,
     );
   }
 }

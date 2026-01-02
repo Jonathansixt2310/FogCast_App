@@ -29,7 +29,12 @@ class LiveDataRepository {
   /// Das Ergebnis ist ein typisiertes Datenobjekt, das weiter
   /// an den StateNotifier gereicht wird.
   Future<LiveDataDto> getLiveData() async {
-    final json = await _api.fetchLiveData();
-    return LiveDataDto.fromJson(json);
+    final raw = await _api.fetchLiveData();
+
+    if (raw is List) {
+      return LiveDataDto.fromList(raw);
+    }
+
+    throw Exception('Unexpected response format: ${raw.runtimeType}');
   }
 }

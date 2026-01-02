@@ -32,7 +32,7 @@ class LiveDataApi {
   ///
   /// Diese Methode liefert nur rohes JSON. Das Mapping in typisierte
   /// Datenobjekte erfolgt im Repository.
-  Future<Map<String, dynamic>> fetchLiveData() async {
+  /*Future<dynamic> fetchLiveData() async {
     final uri = Uri.parse('${Environment.apiBaseUrl}/actual/live-data');
     final response = await _client.get(uri);
 
@@ -40,6 +40,20 @@ class LiveDataApi {
       throw Exception('Failed to load live data (${response.statusCode})');
     }
 
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    return jsonDecode(response.body);
+  }*/
+  Future<dynamic> fetchLiveData() async {
+    final uri = Uri.parse('${Environment.apiBaseUrl}/actual/live-data');
+    final response = await _client.get(uri);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load live data (${response.statusCode})');
+    }
+
+    // 👇 DEBUG: API-Antwort im Log ausgeben
+    print('LIVE DATA RESPONSE:');
+    print(response.body);
+
+    return jsonDecode(response.body);
   }
 }

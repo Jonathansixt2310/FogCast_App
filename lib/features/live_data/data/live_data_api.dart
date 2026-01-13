@@ -56,4 +56,17 @@ class LiveDataApi {
 
     return jsonDecode(response.body);
   }
+
+  Future<List<dynamic>> fetchForecasts({String modelId = 'icon_d2'}) async {
+    final uri = Uri.parse('${Environment.apiBaseUrl}/current-forecast?model_id=$modelId');
+
+    // KORREKTUR: Auch hier _client.get() verwenden statt http.get()
+    final response = await _client.get(uri);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as List<dynamic>;
+    } else {
+      throw Exception('Failed to load forecasts: ${response.statusCode}');
+    }
+  }
 }

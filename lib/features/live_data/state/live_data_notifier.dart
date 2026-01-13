@@ -11,17 +11,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/live_data_repository.dart';
 import '../data/models/live_data_dto.dart';
+import '../data/models/forecast_dto.dart';
 
 class LiveDataState {
   final bool isLoading;
   final String? errorMessage;
   final LiveDataDto? data;
+  final List<ForecastDto>? forecast; //Liste für Zukunftsdaten
 
   /// Erstellt einen neuen Zustand für "Live Data".
   const LiveDataState({
     this.isLoading = false,
     this.errorMessage,
     this.data,
+    this.forecast,
   });
 
   /// Hilfsmethode zum Aktualisieren nur einzelner Werte des States,
@@ -30,11 +33,13 @@ class LiveDataState {
     bool? isLoading,
     String? errorMessage,
     LiveDataDto? data,
+    List<ForecastDto>? forecast,
   }) {
     return LiveDataState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       data: data ?? this.data,
+      forecast: forecast ?? this.forecast,
     );
   }
 }
@@ -63,14 +68,32 @@ class LiveDataNotifier extends StateNotifier<LiveDataState> {
   /// 2. Ruft das Repository auf, um die Daten abzuholen.
   /// 3. Bei Erfolg: speichert das [LiveDataDto].
   /// 4. Bei Fehlern: speichert die Fehlermeldung im State.
+  /// Lädt alle Daten (Live + Forecast) neu.
   Future<void> load() async {
+    // 1. Ladezustand setzen
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final result = await _repository.getLiveData();
-      state = LiveDataState(data: result, isLoading: false);
-    } catch (e) {
+      // 2. Parallel beide Anfragen ans Backend schicken
+      //    Das ist schneller, als nacheinander zu warten.
+      final results = await Future.wait([
+        _repository.getLiveData(),
+        _repository.getForecasts(),
+      ]);
+
+      // 3. Ergebnisse aus der Liste holen
+      final liveData = results[0] as LiveDataDto;
+      final forecastData = results[1] as List<ForecastDto>;
+
+      // 4. Erfolgreichen State setzen
       state = LiveDataState(
+        isLoading: false,
+        data: liveData,
+        forecast: forecastData, // <--- NEU: Daten speichern
+      );
+    } catch (e) {
+      // 5. Fehler abfangen
+      state = state.copyWith(
         isLoading: false,
         errorMessage: e.toString(),
       );

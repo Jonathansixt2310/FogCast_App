@@ -21,6 +21,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/live_data_providers.dart';
+import 'Joni_live_date_start_screen.dart'; // <-- Hinzufügen
 
 class LiveDataPage extends ConsumerStatefulWidget {
   const LiveDataPage({super.key});
@@ -87,7 +88,23 @@ class _LiveDataPageState extends ConsumerState<LiveDataPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Live-Daten')),
+      appBar: AppBar(
+        title: const Text('Live-Daten'),
+        // NEU: Kleines Icon oben rechts, um zum Dashboard zu kommen
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.dashboard),
+            tooltip: 'Zum Dashboard',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const LiveDataDashboard(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: Center(child: body),
     );
   }

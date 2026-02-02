@@ -22,6 +22,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/live_data_providers.dart';
 import 'Joni_live_date_start_screen.dart'; // <-- Hinzufügen
+import 'Ina_live_date_start_screen_button.dart';
+import 'Ina_dashboard_page.dart';
 
 class LiveDataPage extends ConsumerStatefulWidget {
   const LiveDataPage({super.key});
@@ -69,6 +71,7 @@ class _LiveDataPageState extends ConsumerState<LiveDataPage> {
           Text('Temperatur: ${data.temperature} °C'),
           Text('Luftfeuchte: ${data.humidity} %'),
           Text('Pegel: ${data.waterLevel} m'),
+          Text('Wind: ${data.windSpeed} m/s'),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () =>
@@ -90,6 +93,9 @@ class _LiveDataPageState extends ConsumerState<LiveDataPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Live-Daten'),
+        //Ina eingefügt für Button:
+        leading: const Ina_live_data_start_screen_button(),
+
         // NEU: Kleines Icon oben rechts, um zum Dashboard zu kommen
         actions: [
           IconButton(

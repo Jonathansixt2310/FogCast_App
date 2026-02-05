@@ -182,35 +182,63 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
                         padding: const EdgeInsets.all(14),
                         child: Column(
                           children: [
-                            Row(
-                              children: const [
-                                Text(
-                                  'Heute',
-                                  style: TextStyle(
-                                    color: white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Spacer(),
-                                Text(
-                                  '-10°  /  -2°',
-                                  style: TextStyle(
-                                    color: white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
+                            _DayRow(
+                              label: 'Heute',
+                              icon: Icons.cloud,          // oder Icons.today
+                              iconColor: Colors.white70,
+                              left: '-10°',
+                              right: '-2°',
                             ),
                             const SizedBox(height: 10),
-                            _DayRow(label: 'Di', left: '-9°', right: '-1°'),
-                            _DayRow(label: 'Mi', left: '-8°', right: '-5°'),
-                            _DayRow(label: 'Do', left: '-10°', right: '-2°'),
-                            _DayRow(label: 'Fr', left: '-5°', right: '1°'),
-                            _DayRow(label: 'Sa', left: '-2°', right: '4°'),
-                            _DayRow(label: 'So', left: '0°', right: '8°'),
-                            _DayRow(label: 'Mo', left: '-3°', right: '5°'),
+                            _DayRow(
+                              label: 'Di',
+                              icon: Icons.cloud,
+                              iconColor: Colors.white70,
+                              left: '-9°',
+                              right: '-1°',
+                            ),
+                            _DayRow(
+                              label: 'Mi',
+                              icon: Icons.ac_unit,
+                              iconColor: Colors.lightBlueAccent,
+                              left: '-8°',
+                              right: '-5°',
+                            ),
+                            _DayRow(
+                              label: 'Do',
+                              icon: Icons.cloud,
+                              iconColor: Colors.white70,
+                              left: '-10°',
+                              right: '-2°',
+                            ),
+                            _DayRow(
+                              label: 'Fr',
+                              icon: Icons.cloud,
+                              iconColor: Colors.white70,
+                              left: '-5°',
+                              right: '1°',
+                            ),
+                            _DayRow(
+                              label: 'Sa',
+                              icon: Icons.wb_sunny,
+                              iconColor: Colors.amber, // gelb
+                              left: '-2°',
+                              right: '4°',
+                            ),
+                            _DayRow(
+                              label: 'So',
+                              icon: Icons.wb_sunny,
+                              iconColor: Colors.amber,
+                              left: '0°',
+                              right: '8°',
+                            ),
+                            _DayRow(
+                              label: 'Mo',
+                              icon: Icons.ac_unit,
+                              iconColor: Colors.lightBlueAccent,
+                              left: '-3°',
+                              right: '5°',
+                            ),
                             const SizedBox(height: 10),
                             _PrimaryPillButton(
                               text: 'Aktualisieren',
@@ -278,34 +306,48 @@ class _MetricTile extends StatelessWidget {
         color: color,
         borderRadius: BorderRadius.circular(18),
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center, // ✅ alles zentriert
+        mainAxisSize: MainAxisSize.min, // 🔑 verhindert Overflow
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Icon(icon, color: white, size: 20),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: white,
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              height: 1.0, // ✅ verhindert "runterdrücken"
+          // ICON – perfekt zentriert
+          Icon(icon, color: white, size: 22),
+
+          const SizedBox(height: 8),
+
+          // VALUE – skaliert automatisch bei großen Zahlen
+          SizedBox(
+            height: 32,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  color: white,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                ),
+              ),
             ),
           ),
+
           const SizedBox(height: 4),
-          Text(
-            unit,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              height: 1.0,
+
+          // UNIT – ebenfalls overflow-sicher
+          SizedBox(
+            height: 16,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                unit,
+                style: const TextStyle(
+                  color: white,
+                  fontWeight: FontWeight.w600,
+                  height: 1.0,
+                ),
+              ),
             ),
           ),
         ],
@@ -388,11 +430,15 @@ class _HourForecastTile extends StatelessWidget {
 
 class _DayRow extends StatelessWidget {
   final String label;
+  final IconData icon;
+  final Color iconColor;
   final String left;
   final String right;
 
   const _DayRow({
     required this.label,
+    required this.icon,
+    required this.iconColor,
     required this.left,
     required this.right,
   });
@@ -401,42 +447,61 @@ class _DayRow extends StatelessWidget {
   Widget build(BuildContext context) {
     const white = Colors.white;
 
+    const textStyle = TextStyle(
+      color: white,
+      fontSize: 16,
+      fontWeight: FontWeight.w600, // überall gleich
+    );
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           SizedBox(
-            width: 34,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+            width: 52,
+            child: Text(label, style: textStyle),
+          ),
+
+          // --- EXTRA Abstand → Icon weiter nach rechts ---
+          const SizedBox(width: 28),
+
+          // --- Icon ---
+          SizedBox(
+            width: 32,
+            child: Center(
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+          ),
+
+          // --- Flex bis Temperaturen ---
+          const Spacer(),
+
+          // --- Min-Temp ---
+          SizedBox(
+            width: 52,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(left, style: textStyle),
+            ),
+          ),
+
+          // --- Slash (fixe Spalte!) ---
+          const SizedBox(
+            width: 26,
+            child: Center(
+              child: Text(
+                '/',
+                style: textStyle,
               ),
             ),
           ),
-          const Spacer(),
-          Text(
-            left,
-            style: const TextStyle(
-              color: white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 10),
-          const Text(
-            '/',
-            style: TextStyle(color: white, fontSize: 16),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            right,
-            style: const TextStyle(
-              color: white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+
+          // --- Max-Temp ---
+          SizedBox(
+            width: 52,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(right, style: textStyle),
             ),
           ),
         ],

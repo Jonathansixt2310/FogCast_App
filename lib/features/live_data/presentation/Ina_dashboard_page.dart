@@ -308,7 +308,7 @@ class _MetricTile extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(10),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // 🔑 verhindert Overflow
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -374,14 +374,14 @@ class _HourForecastTile extends StatelessWidget {
     final icon = isNight ? Icons.nightlight_round : Icons.wb_sunny_rounded;
 
     return Container(
-      width: 110, // ✅ wichtig für horizontales Scrollen
+      width: 110,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(18),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center, // ✅ zentriert
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             '${hour.toString().padLeft(2, '0')}:00',
@@ -394,7 +394,7 @@ class _HourForecastTile extends StatelessWidget {
 
           Icon(
             icon,
-            color: Colors.amber, // ✅ gelb wie in Figma
+            color: Colors.amber,
             size: 40,
           ),
 

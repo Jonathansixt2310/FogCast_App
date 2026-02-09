@@ -23,9 +23,9 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
     final state = ref.watch(liveDataNotifierProvider);
 
     // Farben wie im Figma (ungefähr)
-    const bg = Color(0xFF2B4544);          // dunkles Grün/Teal
-    const tile = Color(0xFF5E8886);        // Kachel-Farbe
-    const tileDark = Color(0xFF4F7876);    // etwas dunkler
+    const bg = Color(0xFF2B4544); // dunkles Grün/Teal
+    const tile = Color(0xFF5E8886); // Kachel-Farbe
+    const tileDark = Color(0xFF4F7876); // etwas dunkler
     const white = Colors.white;
 
     return Scaffold(
@@ -44,7 +44,6 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
         ),
         iconTheme: const IconThemeData(color: white),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -92,10 +91,20 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
 
               final data = state.data!;
               final forecast = state.forecast ?? <ForecastDto>[];
+              debugPrint('FORECAST count: ${forecast.length}');
+              if (forecast.isNotEmpty) {
+                debugPrint('FORECAST first: ${forecast.first.date}');
+                debugPrint('FORECAST last : ${forecast.last.date}');
+              }
 
-              // Wir zeigen 4 Forecast-Kacheln wie in deinem Design
-              // Falls weniger vorhanden: einfach so viele wie da sind
-              final topForecast = forecast.take(4).toList();
+              final now = DateTime.now();
+
+              final sorted = [...forecast]..sort((a, b) => a.date.compareTo(b.date));
+              // Nächste Stunden ab jetzt (egal ob Tag wechselt – viel robuster)
+              final hours = sorted
+                  .where((f) => f.date.isAfter(now.subtract(const Duration(minutes: 1))))
+                  .take(12)
+                  .toList();
 
               return SingleChildScrollView(
                 child: Column(
@@ -144,21 +153,21 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
 
                     const SizedBox(height: 14),
 
-                    // --- Forecast: 4 kleine Karten nebeneinander (wie Var 3) ---
-                    if (topForecast.isNotEmpty)
-                      Row(
-                        children: [
-                          for (int i = 0; i < topForecast.length; i++) ...[
-                            Expanded(
-                              child: _HourForecastTile(
-                                color: tileDark,
-                                dto: topForecast[i],
-                              ),
-                            ),
-                            if (i != topForecast.length - 1)
-                              const SizedBox(width: 10),
-                          ],
-                        ],
+                    // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
+                    if (hours.isNotEmpty)
+                      SizedBox(
+                        height: 132,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: hours.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          itemBuilder: (context, i) {
+                            return _HourForecastTile(
+                              color: tileDark,
+                              dto: hours[i],
+                            );
+                          },
+                        ),
                       )
                     else
                       _RoundedTile(
@@ -166,7 +175,7 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
                         child: const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: Text(
-                            'Keine Vorhersagedaten verfügbar',
+                            'Keine Vorhersagedaten für heute verfügbar',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: white),
                           ),
@@ -184,7 +193,7 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
                           children: [
                             _DayRow(
                               label: 'Heute',
-                              icon: Icons.cloud,          // oder Icons.today
+                              icon: Icons.cloud,
                               iconColor: Colors.white70,
                               left: '-10°',
                               right: '-2°',
@@ -221,7 +230,7 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
                             _DayRow(
                               label: 'Sa',
                               icon: Icons.wb_sunny,
-                              iconColor: Colors.amber, // gelb
+                              iconColor: Colors.amber,
                               left: '-2°',
                               right: '4°',
                             ),
@@ -412,19 +421,13 @@ class _HourForecastTile extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          const Text(
-            '0mm', // Platzhalter
-            style: TextStyle(color: white, fontSize: 12),
+          Text(
+            '${(dto.precipitation ?? 0).toStringAsFixed(1)}mm',
+            style: const TextStyle(color: white, fontSize: 12),
           ),
         ],
       ),
     );
-  }
-
-
-  static IconData _iconForHour(int hour) {
-    final isNight = hour < 6 || hour > 20;
-    return isNight ? Icons.nightlight_round : Icons.wb_sunny_rounded;
   }
 }
 
@@ -450,7 +453,7 @@ class _DayRow extends StatelessWidget {
     const textStyle = TextStyle(
       color: white,
       fontSize: 16,
-      fontWeight: FontWeight.w600, // überall gleich
+      fontWeight: FontWeight.w600,
     );
 
     return Padding(
@@ -461,22 +464,14 @@ class _DayRow extends StatelessWidget {
             width: 52,
             child: Text(label, style: textStyle),
           ),
-
-          // --- EXTRA Abstand → Icon weiter nach rechts ---
           const SizedBox(width: 28),
-
-          // --- Icon ---
           SizedBox(
             width: 32,
             child: Center(
               child: Icon(icon, color: iconColor, size: 20),
             ),
           ),
-
-          // --- Flex bis Temperaturen ---
           const Spacer(),
-
-          // --- Min-Temp ---
           SizedBox(
             width: 52,
             child: Align(
@@ -484,19 +479,12 @@ class _DayRow extends StatelessWidget {
               child: Text(left, style: textStyle),
             ),
           ),
-
-          // --- Slash (fixe Spalte!) ---
           const SizedBox(
             width: 26,
             child: Center(
-              child: Text(
-                '/',
-                style: textStyle,
-              ),
+              child: Text('/', style: textStyle),
             ),
           ),
-
-          // --- Max-Temp ---
           SizedBox(
             width: 52,
             child: Align(
@@ -527,7 +515,9 @@ class _PrimaryPillButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: pill,
           foregroundColor: white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
           elevation: 0,
         ),
         onPressed: onPressed,

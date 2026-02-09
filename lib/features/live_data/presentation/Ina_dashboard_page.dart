@@ -420,11 +420,7 @@ class _HourForecastTile extends StatelessWidget {
           ),
 
           const SizedBox(height: 10),
-
-          Text(
-            '${(dto.precipitation ?? 0).toStringAsFixed(1)}mm',
-            style: const TextStyle(color: white, fontSize: 12),
-          ),
+          
         ],
       ),
     );

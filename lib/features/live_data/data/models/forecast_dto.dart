@@ -3,36 +3,32 @@ import 'dart:io'; // Für HttpDate
 class ForecastDto {
   final DateTime date;
   final double temperature;
-  final double humidity;
-  final double? precipitation; // Optional, da im Log vorhanden (0.0)
+  final double? precipitation;
 
   ForecastDto({
     required this.date,
     required this.temperature,
-    required this.humidity,
     this.precipitation,
   });
 
-  factory ForecastDto.fromJson(Map<String, dynamic> json) {
-    // 1. Datum parsen: "Tue, 13 Jan 2026 23:00:00 GMT"
-    DateTime parsedDate;
-    try {
-      parsedDate = HttpDate.parse(json['forecast_date'] as String);
-      // Optional: Zeitverschiebung korrigieren, falls nötig (hier GMT -> Lokal)
-      parsedDate = parsedDate.toLocal();
-    } catch (e) {
-      // Fallback, falls das Format mal abweicht
-      parsedDate = DateTime.now();
-    }
+  factory ForecastDto.fromApiEntry(Map<String, dynamic> json) {
+    // forecast_date kann null sein -> fallback
+    final rawDate = json['forecast_date'];
+    final date = (rawDate is String && rawDate.isNotEmpty)
+        ? HttpDate.parse(rawDate).toLocal()
+        : DateTime.now();
+
+    // temperature_2m kann fehlen/null sein -> fallback 0
+    final tempRaw = json['temperature_2m'];
+    final temp = (tempRaw is num) ? tempRaw.toDouble() : 0.0;
+
+    final precRaw = json['precipitation'];
+    final prec = (precRaw is num) ? precRaw.toDouble() : null;
 
     return ForecastDto(
-      date: parsedDate,
-      // 2. Mapping der Keys aus deinem Log:
-      temperature: (json['temperature_2m'] as num).toDouble(),
-      humidity: (json['relative_humidity_2m'] as num).toDouble(),
-      precipitation: json['precipitation'] != null
-          ? (json['precipitation'] as num).toDouble()
-          : 0.0,
+      date: date,
+      temperature: temp,
+      precipitation: prec,
     );
   }
 }

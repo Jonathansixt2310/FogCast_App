@@ -56,6 +56,6 @@ StateNotifierProvider<LiveDataNotifier, LiveDataState>((ref) {
   return LiveDataNotifier(
     liveRepo,
     forecastRepo,
-    modelId: '1', // später konfigurierbar
+    modelId: 'icon_d2', // später konfigurierbar
   );
 });

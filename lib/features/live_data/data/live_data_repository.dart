@@ -42,7 +42,6 @@ class LiveDataRepository {
   Future<List<ForecastDto>> getForecasts() async {
     // Ruft die API mit 'icon_global' auf
     final rawList = await _api.fetchForecasts(modelId: 'icon_global');
-
-    return rawList.map((json) => ForecastDto.fromJson(json)).toList();
+    return rawList.map((json) => ForecastDto.fromApiEntry(json)).toList();
   }
 }

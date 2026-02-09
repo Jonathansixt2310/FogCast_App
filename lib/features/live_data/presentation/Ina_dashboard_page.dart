@@ -154,13 +154,17 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
                     const SizedBox(height: 14),
 
                     // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
+                    // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
                     if (hours.isNotEmpty)
                       SizedBox(
-                        height: 132,
+                        height: 104, // gleiche Höhe wie KPI-Kacheln
                         child: ListView.separated(
+                          primary: false,
+                          physics: const BouncingScrollPhysics(), // oder ClampingScrollPhysics()
                           scrollDirection: Axis.horizontal,
                           itemCount: hours.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          padding: EdgeInsets.zero,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
                           itemBuilder: (context, i) {
                             return _HourForecastTile(
                               color: tileDark,
@@ -383,46 +387,68 @@ class _HourForecastTile extends StatelessWidget {
     final icon = isNight ? Icons.nightlight_round : Icons.wb_sunny_rounded;
 
     return Container(
-      width: 110,
+      width: (MediaQuery.of(context).size.width - 36 - 36) / 4,
+      height: 104, // gleiche Höhe wie KPI-Kacheln
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(18),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '${hour.toString().padLeft(2, '0')}:00',
-            style: const TextStyle(
-              color: white,
-              fontWeight: FontWeight.w700,
+      padding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Zeit
+            Text(
+              '${hour.toString().padLeft(2, '0')}:00',
+              style: const TextStyle(
+                color: white,
+                fontWeight: FontWeight.w700,
+                height: 1.0,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
 
-          Icon(
-            icon,
-            color: Colors.amber,
-            size: 40,
-          ),
+            const SizedBox(height: 6),
 
-          const SizedBox(height: 12),
+            // Icon
+            Icon(icon, color: Colors.amber, size: 30),
 
-          Text(
-            '${dto.temperature.toStringAsFixed(0)}°C',
-            style: const TextStyle(
-              color: white,
-              fontWeight: FontWeight.w800,
-              fontSize: 18,
-              height: 1.0,
+            const SizedBox(height: 6),
+
+            // Temperatur
+            SizedBox(
+              height: 18,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '${dto.temperature.toStringAsFixed(0)}°C',
+                  style: const TextStyle(
+                    color: white,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                  ),
+                ),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 10),
-          
-        ],
-      ),
+            const SizedBox(height: 2),
+
+            // Niederschlag
+            SizedBox(
+              height: 12,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '${(dto.precipitation ?? 0).toStringAsFixed(0)}mm',
+                  style: const TextStyle(
+                    color: white,
+                    fontSize: 12,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
     );
   }
 }

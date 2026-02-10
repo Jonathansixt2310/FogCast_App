@@ -164,7 +164,6 @@ class _LiveDataDashboardState extends ConsumerState<LiveDataDashboard> {
                     const SizedBox(height: 14),
 
                     // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
-                    // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
                     if (hours.isNotEmpty)
                       SizedBox(
                         height: 110, // gleiche Höhe wie KPI-Kacheln
@@ -208,7 +207,8 @@ class _LiveDataDashboardState extends ConsumerState<LiveDataDashboard> {
                             if (dayKeys.isEmpty)
                               const Text("Keine Wochendaten verfügbar", style: TextStyle(color: Colors.white))
                             else
-                              ...dayKeys.map((key) {
+                            // HIER DIE ÄNDERUNG: .take(7) hinzugefügt
+                              ...dayKeys.take(7).map((key) {
                                 final dayData = groupedByDay[key]!;
                                 final date = dayData.first.date;
 
@@ -216,11 +216,9 @@ class _LiveDataDashboardState extends ConsumerState<LiveDataDashboard> {
                                 double minTempRaw = dayData.map((e) => e.temperature).reduce((a, b) => a < b ? a : b);
                                 double maxTempRaw = dayData.map((e) => e.temperature).reduce((a, b) => a > b ? a : b);
 
-                                // Korrektes Runden: .round() macht aus 18.5 -> 19 und aus 18.4 -> 18
                                 final String minTempFormatted = '${minTempRaw.round()}°';
                                 final String maxTempFormatted = '${maxTempRaw.round()}°';
 
-                                // Bestimme Wochentag Name (z.B. Mo, Di...)
                                 final label = _getWeekdayLabel(date);
 
                                 return _DayRow(

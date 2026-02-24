@@ -8,9 +8,9 @@
 /// nicht mit JSON-Maps. Dadurch bleiben Netzwerklayer und Datenmodell
 /// klar voneinander getrennt.
 
-import 'models/live_data_dto.dart';
-import 'live_data_api.dart';
-import 'models/forecast_dto.dart';
+import '../api/live_data_api.dart';
+import '../dto/live_data_dto.dart';
+
 
 class LiveDataRepository {
   /// API-Klasse, die die HTTP-Requests ausführt.
@@ -37,11 +37,5 @@ class LiveDataRepository {
     }
 
     throw Exception('Unexpected response format: ${raw.runtimeType}');
-  }
-  // Vorhersage abrufen
-  Future<List<ForecastDto>> getForecasts() async {
-    // Ruft die API mit 'icon_global' auf
-    final rawList = await _api.fetchForecasts(modelId: 'icon_global');
-    return rawList.map((json) => ForecastDto.fromApiEntry(json)).toList();
   }
 }

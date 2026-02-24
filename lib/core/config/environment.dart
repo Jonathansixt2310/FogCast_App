@@ -1,6 +1,5 @@
+
 class Environment {
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:5000', // später an eure API anpassen
-  );
+  static const String apiBaseUrl = 'https://fogcast.in.htwg-konstanz.de/api/';
+  static const String defaultWeatherModel = 'icon_d2';
 }

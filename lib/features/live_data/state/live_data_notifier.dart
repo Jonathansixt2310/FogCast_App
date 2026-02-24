@@ -10,11 +10,11 @@
 /// was dargestellt wird.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../data/live_data_repository.dart';
-import 'package:fog_cast_app/features/live_data/data/models/forecast_repository.dart';
-import '../data/models/live_data_dto.dart';
-import '../data/models/forecast_dto.dart';
+import 'package:fog_cast_app/core/config/environment.dart';
+import '../data/repositories/live_data_repository.dart';
+import 'package:fog_cast_app/features/live_data/data/repositories/forecast_repository.dart';
+import '../data/dto/live_data_dto.dart';
+import '../data/dto/forecast_dto.dart';
 
 class LiveDataState {
   final bool isLoading;
@@ -54,8 +54,9 @@ class LiveDataNotifier extends StateNotifier<LiveDataState> {
   LiveDataNotifier(
       this._repository,
       this._forecastRepository, {
-        String modelId = 'icon_d2',
-      })  : _modelId = modelId,
+        // Auch hier die zentrale Variable als Fallback nutzen:
+        String modelId = Environment.defaultWeatherModel,
+      }) : _modelId = modelId,
         super(const LiveDataState());
 
   /// Lädt Live-Daten + Stunden-Vorhersage neu.

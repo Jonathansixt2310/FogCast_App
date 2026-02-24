@@ -7,10 +7,11 @@
 /// für Live-Daten UND Forecast-Daten.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/live_data_api.dart';
-import '../data/live_data_repository.dart';
-import '../data/forecast_api.dart';
-import 'package:fog_cast_app/features/live_data/data/models/forecast_repository.dart';
+import 'package:fog_cast_app/core/config/environment.dart';
+import '../data/api/live_data_api.dart';
+import '../data/repositories/live_data_repository.dart';
+import '../data/api/forecast_api.dart';
+import 'package:fog_cast_app/features/live_data/data/repositories/forecast_repository.dart';
 import 'live_data_notifier.dart';
 
 /// ------------------------------
@@ -56,6 +57,7 @@ StateNotifierProvider<LiveDataNotifier, LiveDataState>((ref) {
   return LiveDataNotifier(
     liveRepo,
     forecastRepo,
-    modelId: 'icon_d2', // später konfigurierbar
+    // Nutze hier die zentrale Variable:
+    modelId: Environment.defaultWeatherModel,
   );
 });

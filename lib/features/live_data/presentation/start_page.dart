@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/live_data_providers.dart';
-import '../data/models/forecast_dto.dart';
+import '../data/dto/forecast_dto.dart';
 
 class start_page extends ConsumerStatefulWidget {
   const start_page({super.key});

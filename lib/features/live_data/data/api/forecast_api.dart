@@ -10,10 +10,13 @@ class ForecastApi {
   Future<List<dynamic>> fetchCurrentForecast({
     required String modelId,
   }) async {
+    // Die URL wird hier mit den notwendigen Query-Parametern zusammengebaut.
+    // 'steps': '168' sorgt dafür, dass Daten für 7 Tage (7 * 24h) geladen werden.
     final uri = Uri.parse(
       '${Environment.apiBaseUrl}/current-forecast',
     ).replace(queryParameters: {
-      'model_id': modelId, // <-- STRING, z.B. "icon_d2"
+      'model_id': modelId,
+      'steps': '168',
     });
 
     print('FORECAST URL: $uri');
@@ -21,8 +24,6 @@ class ForecastApi {
     final response = await _client.get(uri);
 
     print('FORECAST STATUS: ${response.statusCode}');
-    print('FORECAST RESPONSE: ${response.body}');
-
 
     if (response.statusCode != 200) {
       throw Exception(

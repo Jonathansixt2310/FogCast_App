@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'features/live_data/presentation/live_data_page.dart';
+import 'features/live_data/presentation/start_page.dart';
 
 void main() {
   runApp(
@@ -21,7 +21,7 @@ class FogCastApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.blue,
       ),
-      home: const LiveDataPage(), // Unser erster Screen
+      home: const start_page(), // Unser erster Screen
     );
   }
 }

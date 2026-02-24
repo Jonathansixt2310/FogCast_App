@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/live_data_providers.dart';
 import '../data/models/forecast_dto.dart';
 
-class Ina_dashboard_page extends ConsumerStatefulWidget {
-  const Ina_dashboard_page({super.key});
+class start_page extends ConsumerStatefulWidget {
+  const start_page({super.key});
 
   @override
-  ConsumerState<Ina_dashboard_page> createState() => _InaDashboardPageState();
+  ConsumerState<start_page> createState() => DashboardPageState();
 }
 
-class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
+class DashboardPageState extends ConsumerState<start_page> {
   @override
   void initState() {
     super.initState();
@@ -106,6 +106,14 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
                   .take(12)
                   .toList();
 
+              // Logik - Vorhersage nächste 7 Tage täglich min/max
+              final Map<String, List<ForecastDto>> groupedByDay = {};
+              for (var f in forecast) {
+                final dayKey = "${f.date.year}-${f.date.month}-${f.date.day}";
+                groupedByDay.putIfAbsent(dayKey, () => []).add(f);
+              }
+              final dayKeys = groupedByDay.keys.toList()..sort();
+
               return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -157,7 +165,7 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
                     // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
                     if (hours.isNotEmpty)
                       SizedBox(
-                        height: 104, // gleiche Höhe wie KPI-Kacheln
+                        height: 110, // gleiche Höhe wie KPI-Kacheln
                         child: ListView.separated(
                           primary: false,
                           physics: const BouncingScrollPhysics(), // oder ClampingScrollPhysics()
@@ -195,69 +203,36 @@ class _InaDashboardPageState extends ConsumerState<Ina_dashboard_page> {
                         padding: const EdgeInsets.all(14),
                         child: Column(
                           children: [
-                            _DayRow(
-                              label: 'Heute',
-                              icon: Icons.cloud,
-                              iconColor: Colors.white70,
-                              left: '-10°',
-                              right: '-2°',
-                            ),
-                            const SizedBox(height: 10),
-                            _DayRow(
-                              label: 'Di',
-                              icon: Icons.cloud,
-                              iconColor: Colors.white70,
-                              left: '-9°',
-                              right: '-1°',
-                            ),
-                            _DayRow(
-                              label: 'Mi',
-                              icon: Icons.ac_unit,
-                              iconColor: Colors.lightBlueAccent,
-                              left: '-8°',
-                              right: '-5°',
-                            ),
-                            _DayRow(
-                              label: 'Do',
-                              icon: Icons.cloud,
-                              iconColor: Colors.white70,
-                              left: '-10°',
-                              right: '-2°',
-                            ),
-                            _DayRow(
-                              label: 'Fr',
-                              icon: Icons.cloud,
-                              iconColor: Colors.white70,
-                              left: '-5°',
-                              right: '1°',
-                            ),
-                            _DayRow(
-                              label: 'Sa',
-                              icon: Icons.wb_sunny,
-                              iconColor: Colors.amber,
-                              left: '-2°',
-                              right: '4°',
-                            ),
-                            _DayRow(
-                              label: 'So',
-                              icon: Icons.wb_sunny,
-                              iconColor: Colors.amber,
-                              left: '0°',
-                              right: '8°',
-                            ),
-                            _DayRow(
-                              label: 'Mo',
-                              icon: Icons.ac_unit,
-                              iconColor: Colors.lightBlueAccent,
-                              left: '-3°',
-                              right: '5°',
-                            ),
+                            if (dayKeys.isEmpty)
+                              const Text("Keine Wochendaten verfügbar", style: TextStyle(color: Colors.white))
+                            else
+                            // HIER DIE ÄNDERUNG: .take(7) hinzugefügt
+                              ...dayKeys.take(7).map((key) {
+                                final dayData = groupedByDay[key]!;
+                                final date = dayData.first.date;
+
+                                // Berechne Min/Max für diesen Tag
+                                double minTempRaw = dayData.map((e) => e.temperature).reduce((a, b) => a < b ? a : b);
+                                double maxTempRaw = dayData.map((e) => e.temperature).reduce((a, b) => a > b ? a : b);
+
+                                final String minTempFormatted = '${minTempRaw.round()}°';
+                                final String maxTempFormatted = '${maxTempRaw.round()}°';
+
+                                final label = _getWeekdayLabel(date);
+
+                                return _DayRow(
+                                  label: label,
+                                  icon: _getIconForTemp(maxTempRaw),
+                                  iconColor: maxTempRaw > 0 ? Colors.amber : Colors.lightBlueAccent,
+                                  left: minTempFormatted,
+                                  right: maxTempFormatted,
+                                );
+                              }).toList(),
+
                             const SizedBox(height: 10),
                             _PrimaryPillButton(
                               text: 'Aktualisieren',
-                              onPressed: () => ref
-                                  .read(liveDataNotifierProvider.notifier)
-                                  .load(),
+                              onPressed: () => ref.read(liveDataNotifierProvider.notifier).load(),
                             ),
                           ],
                         ),
@@ -314,7 +289,7 @@ class _MetricTile extends StatelessWidget {
     const white = Colors.white;
 
     return Container(
-      height: 104,
+      height: 110,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(18),
@@ -388,7 +363,7 @@ class _HourForecastTile extends StatelessWidget {
 
     return Container(
       width: (MediaQuery.of(context).size.width - 36 - 36) / 4,
-      height: 104, // gleiche Höhe wie KPI-Kacheln
+      height: 110, // gleiche Höhe wie KPI-Kacheln
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(18),
@@ -557,4 +532,20 @@ class _PrimaryPillButton extends StatelessWidget {
 String _formatWaterLevelForFigma(double waterLevelMeters) {
   final cm = waterLevelMeters * 100.0;
   return cm.toStringAsFixed(0);
+}
+
+// 7 Tage vorhersage
+String _getWeekdayLabel(DateTime date) {
+  final now = DateTime.now();
+  if (date.day == now.day && date.month == now.month) return 'Heute';
+
+  // Einfache Liste für deutsche Wochentage
+  const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  return days[date.weekday - 1];
+}
+
+IconData _getIconForTemp(double temp) {
+  if (temp > 15) return Icons.wb_sunny;
+  if (temp > 5) return Icons.cloud;
+  return Icons.ac_unit; // Kalt/Schnee
 }

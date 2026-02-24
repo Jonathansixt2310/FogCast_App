@@ -162,7 +162,6 @@ class DashboardPageState extends ConsumerState<start_page> {
                     const SizedBox(height: 14),
 
                     // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
-                    // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
                     if (hours.isNotEmpty)
                       SizedBox(
                         height: 110, // gleiche Höhe wie KPI-Kacheln

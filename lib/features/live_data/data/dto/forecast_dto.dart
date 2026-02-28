@@ -4,11 +4,13 @@ class ForecastDto {
   final DateTime date;
   final double temperature;
   final double? precipitation;
+  final int? weatherCode;
 
   ForecastDto({
     required this.date,
     required this.temperature,
     this.precipitation,
+    this.weatherCode,
   });
 
   factory ForecastDto.fromApiEntry(Map<String, dynamic> json) {
@@ -25,10 +27,14 @@ class ForecastDto {
     final precRaw = json['precipitation'];
     final prec = (precRaw is num) ? precRaw.toDouble() : null;
 
+    final wcRaw = json['weather_code'];
+    final wc = (wcRaw is num) ? wcRaw.toInt() : null;
+
     return ForecastDto(
       date: date,
       temperature: temp,
       precipitation: prec,
+      weatherCode: wc,
     );
   }
 }

@@ -164,7 +164,7 @@ class DashboardPageState extends ConsumerState<start_page> {
                     // --- Forecast: nächste Stunden (live) horizontal scrollbar ---
                     if (hours.isNotEmpty)
                       SizedBox(
-                        height: 110, // gleiche Höhe wie KPI-Kacheln
+                        height: 130, // gleiche Höhe wie KPI-Kacheln
                         child: ListView.separated(
                           primary: false,
                           physics: const BouncingScrollPhysics(), // oder ClampingScrollPhysics()
@@ -357,12 +357,10 @@ class _HourForecastTile extends StatelessWidget {
     const white = Colors.white;
     final hour = dto.date.hour;
 
-    final bool isNight = hour < 6 || hour > 20;
-    final icon = isNight ? Icons.nightlight_round : Icons.wb_sunny_rounded;
 
     return Container(
       width: (MediaQuery.of(context).size.width - 36 - 36) / 4,
-      height: 110, // gleiche Höhe wie KPI-Kacheln
+      height: 130, // gleiche Höhe wie KPI-Kacheln
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(18),
@@ -383,8 +381,11 @@ class _HourForecastTile extends StatelessWidget {
 
             const SizedBox(height: 6),
 
-            // Icon
-            Icon(icon, color: Colors.amber, size: 30),
+            // Emoji
+            Text(
+              _weatherEmojiFromCode(dto.weatherCode),
+              style: const TextStyle(fontSize: 30),
+            ),
 
             const SizedBox(height: 6),
 
@@ -547,4 +548,40 @@ IconData _getIconForTemp(double temp) {
   if (temp > 15) return Icons.wb_sunny;
   if (temp > 5) return Icons.cloud;
   return Icons.ac_unit; // Kalt/Schnee
+}
+
+String _weatherEmojiFromCode(int? code) {
+  const iconMap = {
+    0: "☀️",
+    1: "🌤️",
+    2: "⛅",
+    3: "☁️",
+    45: "🌫️",
+    48: "🌫️",
+    51: "🌦️",
+    53: "🌦️",
+    55: "🌦️",
+    56: "🌧️",
+    57: "🌧️",
+    61: "🌧️",
+    63: "🌧️",
+    65: "🌧️",
+    66: "🌧️",
+    67: "🌧️",
+    71: "🌨️",
+    73: "🌨️",
+    75: "🌨️",
+    77: "❄️",
+    80: "🌦️",
+    81: "🌦️",
+    82: "🌧️",
+    85: "🌨️",
+    86: "🌨️",
+    95: "⛈️",
+    96: "⛈️",
+    99: "⛈️",
+  };
+
+  if (code == null) return "❔";
+  return iconMap[code] ?? "❔";
 }

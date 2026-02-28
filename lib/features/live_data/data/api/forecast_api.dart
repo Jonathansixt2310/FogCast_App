@@ -36,5 +36,6 @@ class ForecastApi {
       throw Exception('Unexpected forecast response (expected List)');
     }
     return decoded;
+    print(decoded.first);
   }
 }

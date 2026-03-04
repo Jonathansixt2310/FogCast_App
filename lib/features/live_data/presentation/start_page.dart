@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/live_data_providers.dart';
 import '../data/dto/forecast_dto.dart';
+import '../presentation/forecast_detail_page.dart';
 
 class start_page extends ConsumerStatefulWidget {
   const start_page({super.key});
@@ -43,6 +44,20 @@ class DashboardPageState extends ConsumerState<start_page> {
           ),
         ),
         iconTheme: const IconThemeData(color: white),
+        //Button:
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bug_report, color: white),
+            tooltip: 'Ina Landingpage Test',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ForecastDetailPage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(

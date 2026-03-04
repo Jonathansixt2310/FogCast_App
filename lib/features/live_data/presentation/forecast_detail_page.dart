@@ -132,10 +132,13 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      Text(
-                        emoji,
-                        style: const TextStyle(fontSize: 34),
-                      ),
+                      if (_selectedMetric == 'Temperatur') ...[
+                        const SizedBox(width: 10),
+                        Text(
+                          emoji,
+                          style: const TextStyle(fontSize: 34),
+                        ),
+                      ],
                       const Spacer(),
                       _MetricDropdown(
                         value: _selectedMetric,
@@ -289,6 +292,17 @@ class _MetricDropdown extends StatelessWidget {
                     ],
                   ),
                 ),
+                DropdownMenuItem(
+                  value: 'Niederschlag',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.grain, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Niederschlag', overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
               ],
           onChanged: (v) {
             if (v == null) return;
@@ -341,6 +355,15 @@ class _MetricConfig {
           // Dafür muss ForecastDto "windSpeed" haben (double) – falls du es später hinzufügst.
           // Bis dahin gib null zurück (dann erscheinen keine Spots).
           valueOf: (f) => f.windSpeed,
+        );
+      case 'Niederschlag':
+        return _MetricConfig(
+          key: 'Niederschlag',
+          label: 'Niederschlag',
+          icon: Icons.grain,
+          iconColor: Colors.lightBlueAccent,
+          unitShort: 'mm',
+          valueOf: (f) => f.precipitation,
         );
       case 'Temperatur':
       default:

@@ -1,40 +1,66 @@
-import 'dart:io'; // Für HttpDate
+import 'dart:io'; // HttpDate
 
 class ForecastDto {
   final DateTime date;
+
   final double temperature;
   final double? precipitation;
   final int? weatherCode;
+
+  final double? humidity;      // relative_humidity_2m
+  final double? windSpeed;     // wind_speed_10m (oder wind_speed)
+  final double? windDirection; // wind_direction_10m (optional)
 
   ForecastDto({
     required this.date,
     required this.temperature,
     this.precipitation,
     this.weatherCode,
+    this.humidity,
+    this.windSpeed,
+    this.windDirection,
   });
 
+  static double? _numOrNull(dynamic v) {
+    if (v is num) {
+      final d = v.toDouble();
+      if (d.isNaN || !d.isFinite) return null;
+      return d;
+    }
+    return null;
+  }
+
   factory ForecastDto.fromApiEntry(Map<String, dynamic> json) {
-    // forecast_date kann null sein -> fallback
     final rawDate = json['forecast_date'];
     final date = (rawDate is String && rawDate.isNotEmpty)
         ? HttpDate.parse(rawDate).toLocal()
         : DateTime.now();
 
-    // temperature_2m kann fehlen/null sein -> fallback 0
-    final tempRaw = json['temperature_2m'];
-    final temp = (tempRaw is num) ? tempRaw.toDouble() : 0.0;
+    // Temperatur
+    final temp = _numOrNull(json['temperature_2m']) ?? 0.0;
 
-    final precRaw = json['precipitation'];
-    final prec = (precRaw is num) ? precRaw.toDouble() : null;
+    // Optional: Niederschlag
+    final prec = _numOrNull(json['precipitation']);
 
+    // Optional: Wettercode (falls vorhanden)
     final wcRaw = json['weather_code'];
     final wc = (wcRaw is num) ? wcRaw.toInt() : null;
+
+    // Luftfeuchte (Forecast)
+    final hum = _numOrNull(json['relative_humidity_2m']);
+
+    // Wind (Forecast) – je nach API-Key:
+    final ws = _numOrNull(json['wind_speed_10m']) ?? _numOrNull(json['wind_speed']);
+    final wd = _numOrNull(json['wind_direction_10m']) ?? _numOrNull(json['wind_direction']);
 
     return ForecastDto(
       date: date,
       temperature: temp,
       precipitation: prec,
       weatherCode: wc,
+      humidity: hum,
+      windSpeed: ws,
+      windDirection: wd,
     );
   }
 }

@@ -122,12 +122,27 @@ class DashboardPageState extends ConsumerState<start_page> {
                   .toList();
 
               // Logik - Vorhersage nächste 7 Tage täglich min/max
+              // 1. Gruppierung der vorhandenen Daten nach Tagen
               final Map<String, List<ForecastDto>> groupedByDay = {};
               for (var f in forecast) {
                 final dayKey = "${f.date.year}-${f.date.month}-${f.date.day}";
                 groupedByDay.putIfAbsent(dayKey, () => []).add(f);
               }
-              final dayKeys = groupedByDay.keys.toList()..sort();
+
+              // 2. Fixierte 7-Tage-Reihenfolge generieren (Beginnend mit Heute)
+              final List<String> potentialDayKeys = List.generate(7, (index) {
+                final date = DateTime.now().add(Duration(days: index));
+                return "${date.year}-${date.month}-${date.day}";
+              });
+
+              // 3. Nur die Keys behalten, die auch wirklich Daten vom Modell erhalten haben
+              // Das verhindert den "unexpected null value" Fehler bei Modellen mit kurzer Laufzeit
+              final dayKeys = potentialDayKeys.where((key) => groupedByDay.containsKey(key)).toList();
+
+              // Falls gar keine Vorhersage-Daten da sind, optional eine Info anzeigen
+              if (dayKeys.isEmpty) {
+                return const Center(child: Text("Keine Vorhersagedaten für dieses Modell verfügbar", style: TextStyle(color: Colors.white)));
+              }
 
               return SingleChildScrollView(
                 child: Column(
@@ -552,9 +567,12 @@ String _formatWaterLevelForFigma(double waterLevelMeters) {
 // 7 Tage vorhersage
 String _getWeekdayLabel(DateTime date) {
   final now = DateTime.now();
-  if (date.day == now.day && date.month == now.month) return 'Heute';
+  // Prüfen, ob das Datum heute ist (Jahr, Monat und Tag gleich)
+  if (date.year == now.year && date.month == now.month && date.day == now.day) {
+    return 'Heute';
+  }
 
-  // Einfache Liste für deutsche Wochentage
+  // Deutsche Wochentage (Index 1 = Montag, ..., 7 = Sonntag)
   const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
   return days[date.weekday - 1];
 }

@@ -233,28 +233,35 @@ class DashboardPageState extends ConsumerState<start_page> {
                         child: Column(
                           children: [
                             if (dayKeys.isEmpty)
-                              const Text("Keine Wochendaten verfügbar", style: TextStyle(color: Colors.white))
+                              const Text("Keine Wochendaten verfügbar", style: TextStyle(color: white))
                             else
-                            // HIER DIE ÄNDERUNG: .take(7) hinzugefügt
-                              ...dayKeys.take(7).map((key) {
+                              ...dayKeys.map((key) {
                                 final dayData = groupedByDay[key]!;
-                                final date = dayData.first.date;
 
-                                // Berechne Min/Max für diesen Tag
-                                double minTempRaw = dayData.map((e) => e.temperature).reduce((a, b) => a < b ? a : b);
-                                double maxTempRaw = dayData.map((e) => e.temperature).reduce((a, b) => a > b ? a : b);
+                                // 1. Alle Wetter-Codes dieses Tages sammeln
+                                final List<int> dailyCodes = dayData.map((f) => f.weatherCode ?? 0).toList();
 
-                                final String minTempFormatted = '${minTempRaw.round()}°';
-                                final String maxTempFormatted = '${maxTempRaw.round()}°';
+                                // 2. Den am häufigsten vorkommenden Code finden (Modalwert)
+                                final Map<int, int> occurrences = {};
+                                for (var code in dailyCodes) {
+                                  occurrences[code] = (occurrences[code] ?? 0) + 1;
+                                }
 
-                                final label = _getWeekdayLabel(date);
+                                // Den Code mit der höchsten Anzahl ermitteln
+                                final mostFrequentCode = occurrences.entries
+                                    .reduce((a, b) => a.value > b.value ? a : b)
+                                    .key;
+
+                                // 3. Temperaturen für Min/Max (bleibt gleich)
+                                double minT = dayData.map((e) => e.temperature).reduce((a, b) => a < b ? a : b);
+                                double maxT = dayData.map((e) => e.temperature).reduce((a, b) => a > b ? a : b);
 
                                 return _DayRow(
-                                  label: label,
-                                  icon: _getIconForTemp(maxTempRaw),
-                                  iconColor: maxTempRaw > 0 ? Colors.amber : Colors.lightBlueAccent,
-                                  left: minTempFormatted,
-                                  right: maxTempFormatted,
+                                  label: _getWeekdayLabel(dayData.first.date),
+                                  // Jetzt nutzen wir den häufigsten Code statt der Mittagszeit
+                                  emoji: _weatherEmojiFromCode(mostFrequentCode),
+                                  left: '${minT.round()}°',
+                                  right: '${maxT.round()}°',
                                 );
                               }).toList(),
 
@@ -460,15 +467,13 @@ class _HourForecastTile extends StatelessWidget {
 
 class _DayRow extends StatelessWidget {
   final String label;
-  final IconData icon;
-  final Color iconColor;
+  final String emoji; // Korrekt als String
   final String left;
   final String right;
 
   const _DayRow({
     required this.label,
-    required this.icon,
-    required this.iconColor,
+    required this.emoji,
     required this.left,
     required this.right,
   });
@@ -492,10 +497,14 @@ class _DayRow extends StatelessWidget {
             child: Text(label, style: textStyle),
           ),
           const SizedBox(width: 28),
+          // HIER WAR DER FEHLER: Das Icon-Widget muss durch ein Text-Widget ersetzt werden
           SizedBox(
             width: 32,
             child: Center(
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Text(
+                emoji,
+                style: const TextStyle(fontSize: 22), // Emojis brauchen Text-Style
+              ),
             ),
           ),
           const Spacer(),

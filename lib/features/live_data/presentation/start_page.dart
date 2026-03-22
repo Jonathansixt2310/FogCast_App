@@ -298,6 +298,7 @@ class _RoundedTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(18),

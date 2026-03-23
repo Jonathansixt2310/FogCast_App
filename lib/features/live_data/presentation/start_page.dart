@@ -45,19 +45,6 @@ class DashboardPageState extends ConsumerState<start_page> {
         ),
         iconTheme: const IconThemeData(color: white),
         //Button:
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bug_report, color: white),
-            tooltip: 'Ina Landingpage Test',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const ForecastDetailPage(),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -258,10 +245,19 @@ class DashboardPageState extends ConsumerState<start_page> {
 
                                 return _DayRow(
                                   label: _getWeekdayLabel(dayData.first.date),
-                                  // Jetzt nutzen wir den häufigsten Code statt der Mittagszeit
                                   emoji: _weatherEmojiFromCode(mostFrequentCode),
                                   left: '${minT.round()}°',
                                   right: '${maxT.round()}°',
+                                  // --- HIER DIE NEUE AKTION EINFÜGEN ---
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ForecastDetailPage(
+                                          selectedDate: dayData.first.date,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 );
                               }).toList(),
 
@@ -468,15 +464,18 @@ class _HourForecastTile extends StatelessWidget {
 
 class _DayRow extends StatelessWidget {
   final String label;
-  final String emoji; // Korrekt als String
+  final String emoji;
   final String left;
   final String right;
+  final VoidCallback? onTap; // <-- 1. Neues Feld hinzufügen
 
   const _DayRow({
+    super.key,
     required this.label,
     required this.emoji,
     required this.left,
     required this.right,
+    this.onTap, // <-- 2. Im Konstruktor hinzufügen
   });
 
   @override
@@ -489,47 +488,54 @@ class _DayRow extends StatelessWidget {
       fontWeight: FontWeight.w600,
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 52,
-            child: Text(label, style: textStyle),
-          ),
-          const SizedBox(width: 28),
-          // HIER WAR DER FEHLER: Das Icon-Widget muss durch ein Text-Widget ersetzt werden
-          SizedBox(
-            width: 32,
-            child: Center(
-              child: Text(
-                emoji,
-                style: const TextStyle(fontSize: 22), // Emojis brauchen Text-Style
+    // 3. Das Padding mit Material und InkWell umschließen
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap, // <-- 4. Klick-Aktion verknüpfen
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 52,
+                child: Text(label, style: textStyle),
               ),
-            ),
+              const SizedBox(width: 28),
+              SizedBox(
+                width: 32,
+                child: Center(
+                  child: Text(
+                    emoji,
+                    style: const TextStyle(fontSize: 22),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: 52,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(left, style: textStyle),
+                ),
+              ),
+              const SizedBox(
+                width: 26,
+                child: Center(
+                  child: Text('/', style: textStyle),
+                ),
+              ),
+              SizedBox(
+                width: 52,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(right, style: textStyle),
+                ),
+              ),
+            ],
           ),
-          const Spacer(),
-          SizedBox(
-            width: 52,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(left, style: textStyle),
-            ),
-          ),
-          const SizedBox(
-            width: 26,
-            child: Center(
-              child: Text('/', style: textStyle),
-            ),
-          ),
-          SizedBox(
-            width: 52,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(right, style: textStyle),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

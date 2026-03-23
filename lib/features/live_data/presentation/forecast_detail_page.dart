@@ -6,7 +6,9 @@ import '../state/live_data_providers.dart';
 import '../data/dto/forecast_dto.dart';
 
 class ForecastDetailPage extends ConsumerStatefulWidget {
-  const ForecastDetailPage({super.key});
+  // Auswahl des Tages in 7  Tage Vorhersage
+  final DateTime selectedDate;
+  const ForecastDetailPage({super.key, required this.selectedDate});
 
   @override
   ConsumerState<ForecastDetailPage> createState() => _ForecastDetailPageState();
@@ -26,26 +28,24 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
     final state = ref.watch(liveDataNotifierProvider);
     final forecast = state.forecast ?? <ForecastDto>[];
 
-    // --- MORGEN (00:00–23:59) ---
-    final now = DateTime.now();
-    final tomorrow = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
-    final start = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0);
-    final end = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59, 59);
+    // --- GEWÄHLTEN TAG BERECHNEN (00:00–23:59) ---
+    // Wir nutzen jetzt widget.selectedDate anstatt "tomorrow"
+    final targetDate = widget.selectedDate;
+    final start = DateTime(targetDate.year, targetDate.month, targetDate.day, 0, 0, 0);
+    final end = DateTime(targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
 
-    final tomorrowData = forecast
+    final dayData = forecast // Umbenannt von tomorrowData zu dayData
         .where((f) => !f.date.isBefore(start) && !f.date.isAfter(end))
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    // --- Metric-Konfiguration (ein Chart, unterschiedliche y-Quelle) ---
+    // --- Metric-Konfiguration ... ---
     final metric = _MetricConfig.fromKey(_selectedMetric);
 
-    // Spots: x = Stunde (inkl. Minuten), y = gewählte Metrik
     final spots = <FlSpot>[];
-    for (final f in tomorrowData) {
+    for (final f in dayData) {
       final x = f.date.hour + (f.date.minute / 60.0);
       final y = metric.valueOf(f);
-
       if (y != null && y.isFinite) {
         spots.add(FlSpot(x, y));
       }
@@ -66,7 +66,8 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
     final headlineValue = (spots.isNotEmpty)
         ? '${spots.first.y.round()}${metric.unitShort}'
         : '--${metric.unitShort}';
-    final ForecastDto? firstOfDay = tomorrowData.isNotEmpty ? tomorrowData.first : null;
+    // HIER: dayData statt tomorrowData verwenden!
+    final ForecastDto? firstOfDay = dayData.isNotEmpty ? dayData.first : null;
     final String emoji = _weatherEmojiFromCode(firstOfDay?.weatherCode);
 
     return Scaffold(
@@ -109,7 +110,7 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        _formatGermanDate(tomorrow),
+                        _formatGermanDate(targetDate),
                         style: const TextStyle(
                           color: white,
                           fontWeight: FontWeight.w700,
@@ -160,7 +161,7 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
                     child: (spots.length < 2)
                         ? Center(
                       child: Text(
-                        'Keine ${metric.label}daten für morgen',
+                        'Keine ${metric.label}daten für diesen Tag',
                         style: const TextStyle(color: white),
                       ),
                     )

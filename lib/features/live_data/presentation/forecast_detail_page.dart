@@ -39,6 +39,15 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
+    // 1. Filtern für die stündliche Liste
+    final now = DateTime.now();
+    final hourlyItems = dayData.where((f) {
+      if (targetDate.year == now.year && targetDate.month == now.month && targetDate.day == now.day) {
+        return f.date.isAfter(now) || f.date.isAtSameMomentAs(now);
+      }
+      return true;
+    }).toList();
+
     // --- Metric-Konfiguration ... ---
     final metric = _MetricConfig.fromKey(_selectedMetric);
 
@@ -50,6 +59,7 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
         spots.add(FlSpot(x, y));
       }
     }
+
 
     // Min/Max fürs Scaling
     double? minY;
@@ -86,11 +96,60 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
           ),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- GROSSE FORECAST KACHEL ---
+            // --- 1. DATUM PILL ---
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                decoration: BoxDecoration(
+                  color: tileDark,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  _formatGermanDate(targetDate),
+                  style: const TextStyle(
+                    color: white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // --- 2. VERTIKALE STÜNDLICHE VORHERSAGE ---
+            const Text(
+              'Stündliche Vorhersage',
+              style: TextStyle(
+                color: white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Wir nutzen hier eine Column statt ListView, damit alles
+            // gemeinsam im SingleChildScrollView scrollt.
+            Column(
+              children: hourlyItems.map((item) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _HourlyVerticalTile(
+                    item: item,
+                    emoji: _weatherEmojiFromCode(item.weatherCode),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 20),
+
+            // --- 3. CHART BEREICH ---
             Container(
               decoration: BoxDecoration(
                 color: tile,
@@ -100,119 +159,43 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // DATUM PILL (morgen)
-                  Align(
-                    alignment: Alignment.center,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: tileDark,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        _formatGermanDate(targetDate),
-                        style: const TextStyle(
-                          color: white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // VALUE + ICON + DROPDOWN
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        headlineValue,
+                        _selectedMetric,
                         style: const TextStyle(
                           color: white,
-                          fontSize: 42,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (_selectedMetric == 'Temperatur') ...[
-                        const SizedBox(width: 10),
-                        Text(
-                          emoji,
-                          style: const TextStyle(fontSize: 34),
-                        ),
-                      ],
-                      const Spacer(),
                       _MetricDropdown(
                         value: _selectedMetric,
                         onChanged: (v) => setState(() => _selectedMetric = v),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 22),
-
-                  // CHART TILE
                   Container(
-                    height: 320,
+                    height: 300,
                     decoration: BoxDecoration(
                       color: chartBg,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     padding: const EdgeInsets.all(16),
                     child: (spots.length < 2)
-                        ? Center(
-                      child: Text(
-                        'Keine ${metric.label}daten für diesen Tag',
-                        style: const TextStyle(color: white),
-                      ),
-                    )
+                        ? const Center(child: Text('Keine Daten', style: TextStyle(color: white)))
                         : LineChart(
                       LineChartData(
-                        minX: 0,
-                        maxX: 23.99,
-                        minY: minY,
-                        maxY: maxY,
-                        gridData: const FlGridData(show: true),
-                        borderData: FlBorderData(show: false),
-                        titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 44,
-                              getTitlesWidget: (value, meta) {
-                                return Text(
-                                  value.toStringAsFixed(0),
-                                  style: const TextStyle(color: white, fontSize: 12),
-                                );
-                              },
-                            ),
-                          ),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              interval: 6,
-                              getTitlesWidget: (value, meta) {
-                                final h = value.round();
-                                return Text(
-                                  '${h.toString().padLeft(2, '0')}:00',
-                                  style: const TextStyle(color: white, fontSize: 12),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
+                        // ... deine bestehende LineChartData Konfiguration ...
                         lineBarsData: [
                           LineChartBarData(
                             spots: spots,
                             isCurved: true,
                             barWidth: 3,
+                            color: Colors.white,
                             dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(show: false),
                           ),
                         ],
                       ),
@@ -417,4 +400,84 @@ String _weatherEmojiFromCode(int? code) {
   };
   if (code == null) return "❔";
   return iconMap[code] ?? "❔";
+}
+
+class _HourlyVerticalTile extends StatelessWidget {
+  final ForecastDto item;
+  final String emoji;
+
+  const _HourlyVerticalTile({required this.item, required this.emoji});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5E8886), // Deine 'tile' Farbe
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        children: [
+          // 1. Uhrzeit
+          SizedBox(
+            width: 45,
+            child: Text(
+              "${item.date.hour.toString().padLeft(2, '0')}:00",
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          // 2. Wetter-Icon
+          SizedBox(width: 35, child: Text(emoji, style: const TextStyle(fontSize: 22))),
+
+          // 3. Temperatur
+          SizedBox(
+            width: 45,
+            child: Text(
+              "${item.temperature.round()}°",
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+
+          const Spacer(),
+
+          // 4. Windstärke
+          _SmallWeatherInfo(
+            icon: Icons.air,
+            value: "${item.windSpeed?.toStringAsFixed(1) ?? '0'} m/s",
+          ),
+
+          const SizedBox(width: 12),
+
+          // 5. Niederschlag (Menge)
+          _SmallWeatherInfo(
+            icon: Icons.grain,
+            value: "${item.precipitation?.toStringAsFixed(1) ?? '0'} mm",
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Hilfs-Widget für die kleinen Info-Icons in der Kachel
+class _SmallWeatherInfo extends StatelessWidget {
+  final IconData icon;
+  final String value;
+
+  const _SmallWeatherInfo({required this.icon, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white70, size: 14),
+        const SizedBox(width: 4),
+        Text(
+          value,
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+        ),
+      ],
+    );
+  }
 }

@@ -124,7 +124,7 @@ class _ForecastDetailPageState extends ConsumerState<ForecastDetailPage> {
 
             // --- 2. VERTIKALE STÜNDLICHE VORHERSAGE ---
             const Text(
-              'Stündliche Vorhersage',
+              'Stündliche Vorschau',
               style: TextStyle(
                 color: white,
                 fontSize: 18,

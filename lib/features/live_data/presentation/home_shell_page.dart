@@ -15,7 +15,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
 
   final List<Widget> _pages = const [
     start_page(),
-    ExpertPage(),
+    expert_page(),
     SettingsPage(),
   ];
 

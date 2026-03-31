@@ -9,7 +9,8 @@ class ForecastDto {
 
   final double? humidity;      // relative_humidity_2m
   final double? windSpeed;     // wind_speed_10m (oder wind_speed)
-  final double? windDirection; // wind_direction_10m (optional)
+  final double? windDirection;
+  final double? windGust;// wind_direction_10m (optional)
 
   ForecastDto({
     required this.date,
@@ -19,6 +20,7 @@ class ForecastDto {
     this.humidity,
     this.windSpeed,
     this.windDirection,
+    this.windGust,
   });
 
   static double? _numOrNull(dynamic v) {
@@ -39,10 +41,10 @@ class ForecastDto {
     // Temperatur
     final temp = _numOrNull(json['temperature_2m']) ?? 0.0;
 
-    // Optional: Niederschlag
+    // Niederschlag
     final prec = _numOrNull(json['precipitation']);
 
-    // Optional: Wettercode (falls vorhanden)
+    // Wettercode
     final wcRaw = json['weather_code'];
     final wc = (wcRaw is num) ? wcRaw.toInt() : null;
 
@@ -53,6 +55,11 @@ class ForecastDto {
     final ws = _numOrNull(json['wind_speed_10m']) ?? _numOrNull(json['wind_speed']);
     final wd = _numOrNull(json['wind_direction_10m']) ?? _numOrNull(json['wind_direction']);
 
+    final windGust = (json['wind_gusts_10m'] is num)
+        ? (json['wind_gusts_10m'] as num).toDouble()
+        : null;
+
+
     return ForecastDto(
       date: date,
       temperature: temp,
@@ -61,6 +68,7 @@ class ForecastDto {
       humidity: hum,
       windSpeed: ws,
       windDirection: wd,
+      windGust: windGust,
     );
   }
 }

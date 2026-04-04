@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/live_data_providers.dart';
 import '../data/dto/forecast_dto.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class expert_page extends ConsumerStatefulWidget {
   const expert_page({super.key});
@@ -11,6 +12,16 @@ class expert_page extends ConsumerStatefulWidget {
 }
 
 class _ExpertPageState extends ConsumerState<expert_page> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool temperatur = true;
+  bool luftfeuchtigkeit = true;
+  bool niederschlag = true;
+  bool wolkendichte = false;
+  bool gewitter = false;
+
+  String selectedModel = 'icon_d2';
+  String selectedPage = 'Standard';
+
   @override
   void initState() {
     super.initState();
@@ -28,8 +39,24 @@ class _ExpertPageState extends ConsumerState<expert_page> {
     const white = Colors.white;
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: bg,
-      appBar: AppBar(
+      drawer: ExpertMenuDrawer(
+        temperatur: temperatur,
+        luftfeuchtigkeit: luftfeuchtigkeit,
+        niederschlag: niederschlag,
+        wolkendichte: wolkendichte,
+        gewitter: gewitter,
+        selectedModel: selectedModel,
+        selectedPage: selectedPage,
+        onTemperaturChanged: (v) => setState(() => temperatur = v),
+        onLuftfeuchtigkeitChanged: (v) => setState(() => luftfeuchtigkeit = v),
+        onNiederschlagChanged: (v) => setState(() => niederschlag = v),
+        onWolkendichteChanged: (v) => setState(() => wolkendichte = v),
+        onGewitterChanged: (v) => setState(() => gewitter = v),
+        onModelChanged: (v) => setState(() => selectedModel = v),
+        onPageChanged: (v) => setState(() => selectedPage = v),
+      ),      appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
         centerTitle: true,
@@ -42,6 +69,12 @@ class _ExpertPageState extends ConsumerState<expert_page> {
           ),
         ),
         iconTheme: const IconThemeData(color: white),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () {
+            _scaffoldKey.currentState?.openDrawer();
+          },
+        ),
       ),
       body: SafeArea(
         child: Padding(
@@ -103,7 +136,6 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // --- Top: 4 KPI-Kacheln ---
                     Row(
                       children: [
                         Expanded(
@@ -145,10 +177,7 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 14),
-
-                    // --- Hourly Forecast: Windgeschwindigkeit + Richtung ---
                     if (hours.isNotEmpty)
                       SizedBox(
                         height: 150,
@@ -179,54 +208,83 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           ),
                         ),
                       ),
-
                     const SizedBox(height: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (temperatur) ...[
+                          _ExpertGraphCard(
+                            title: 'Temperatur',
+                            child: _ExpertLineChart(
+                              data: forecast,
+                              unitY: '°C',
+                              unitX: 'Uhrzeit',
+                              valueSelector: (f) => f.temperature,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
 
-                    // --- Platzhalter für Experten-Grafen ---
-                    _RoundedTile(
-                      color: tile,
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              'Experten-Grafen',
-                              style: TextStyle(
-                                color: white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        if (luftfeuchtigkeit) ...[
+                          _ExpertGraphCard(
+                            title: 'Luftfeuchtigkeit',
+                            child: _ExpertLineChart(
+                              data: forecast,
+                              unitY: '%',
+                              unitX: 'Uhrzeit',
+                              valueSelector: (f) => f.humidity,
                             ),
-                            const SizedBox(height: 12),
-                            Container(
-                              height: 260,
-                              decoration: BoxDecoration(
-                                color: chartBg,
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Hier kommen später die Grafen\npro ausgewähltem Feature rein',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: white,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        if (niederschlag) ...[
+                          _ExpertGraphCard(
+                            title: 'Niederschlag',
+                            child: _ExpertLineChart(
+                              data: forecast,
+                              unitY: 'mm',
+                              unitX: 'Uhrzeit',
+                              valueSelector: (f) => f.precipitation,
+                              curved: false,
                             ),
-                            const SizedBox(height: 10),
-                            _PrimaryPillButton(
-                              text: 'Aktualisieren',
-                              onPressed: () =>
-                                  ref.read(liveDataNotifierProvider.notifier).load(),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        if (wolkendichte) ...[
+                          _ExpertGraphCard(
+                            title: 'Wolkendichte',
+                            child: _ExpertLineChart(
+                              data: forecast,
+                              unitY: '%',
+                              unitX: 'Uhrzeit',
+                              valueSelector: (f) => f.cloudCover,
                             ),
-                          ],
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        if (gewitter) ...[
+                          _ExpertGraphCard(
+                            title: 'Gewitter',
+                            child: _ExpertLineChart(
+                              data: forecast,
+                              unitY: '',
+                              unitX: 'Uhrzeit',
+                              valueSelector: (f) => f.cape,
+                              curved: false,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        _PrimaryPillButton(
+                          text: 'Aktualisieren',
+                          onPressed: () => ref.read(liveDataNotifierProvider.notifier).load(),
                         ),
-                      ),
+                      ],
                     ),
-
                     const SizedBox(height: 18),
                   ],
                 ),
@@ -324,6 +382,251 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
+class _ExpertLineChart extends StatelessWidget {
+  final List<ForecastDto> data;
+  final String unitY;
+  final String unitX;
+  final double? Function(ForecastDto f) valueSelector;
+  final bool curved;
+
+  const _ExpertLineChart({
+    required this.data,
+    required this.unitY,
+    required this.unitX,
+    required this.valueSelector,
+    this.curved = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const white = Colors.white;
+    const darkText = Colors.black87;
+
+    final now = DateTime.now();
+    final start = now;
+    final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    final dayData = data
+        .where((f) => !f.date.isBefore(start) && !f.date.isAfter(end))
+        .toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    final spots = <FlSpot>[];
+    for (final f in dayData) {
+      final x = f.date.hour + (f.date.minute / 60.0);
+      final y = valueSelector(f);
+
+      if (y != null && y.isFinite) {
+        spots.add(FlSpot(x, y));
+      }
+    }
+
+    if (spots.length < 2) {
+      return const Center(
+        child: Text(
+          'Keine Daten verfügbar',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: white,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    double minY = spots.first.y;
+    double maxY = spots.first.y;
+
+    for (final spot in spots) {
+      if (spot.y < minY) minY = spot.y;
+      if (spot.y > maxY) maxY = spot.y;
+    }
+
+    minY = minY.floorToDouble();
+    maxY = maxY.ceilToDouble();
+
+    if (minY == maxY) {
+      minY -= 1;
+      maxY += 1;
+    }
+
+    final minX = spots.first.x;
+    final maxX = 23.0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
+      child: Stack(
+        children: [
+          LineChart(
+            LineChartData(
+              minX: minX,
+              maxX: maxX,
+              minY: minY,
+              maxY: maxY,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: true,
+                drawHorizontalLine: true,
+                getDrawingHorizontalLine: (value) => FlLine(
+                  color: white.withOpacity(0.18),
+                  strokeWidth: 1,
+                ),
+                getDrawingVerticalLine: (value) => FlLine(
+                  color: white.withOpacity(0.18),
+                  strokeWidth: 1,
+                ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(
+                  color: Colors.black.withOpacity(0.55),
+                  width: 1.4,
+                ),
+              ),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 26,
+                    interval: _intervalForY(maxY - minY),
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        value.toStringAsFixed(0),
+                        style: const TextStyle(
+                          color: darkText,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 3,
+                    reservedSize: 28,
+                    getTitlesWidget: (value, meta) {
+                      final rounded = value.round();
+
+                      if (rounded < minX.floor() || rounded > 23) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Text(
+                        '${rounded.toString().padLeft(2, '0')}:00',
+                        style: const TextStyle(
+                          color: darkText,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: curved,
+                  barWidth: 3.5,
+                  color: white,
+                  dotData: const FlDotData(show: false),
+                  belowBarData: BarAreaData(show: false),
+                ),
+              ],
+            ),
+          ),
+
+          Positioned(
+            left: 4,
+            top: 6,
+            child: Text(
+              unitY,
+              style: const TextStyle(
+                color: darkText,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+          Positioned(
+            right: 8,
+            bottom: 2,
+            child: Text(
+              unitX,
+              style: const TextStyle(
+                color: darkText,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+double _intervalForY(double range) {
+  if (range <= 5) return 1;
+  if (range <= 10) return 2;
+  if (range <= 20) return 5;
+  if (range <= 50) return 10;
+  return 20;
+}
+
+class _ExpertGraphCard extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _ExpertGraphCard({
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const tile = Color(0xFF5E8886);
+    const chartBg = Color(0xFF274847);
+    const white = Colors.white;
+
+    return _RoundedTile(
+      color: tile,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 220,
+              decoration: BoxDecoration(
+                color: chartBg,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: child,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ExpertHourForecastTile extends StatelessWidget {
   final Color color;
   final ForecastDto dto;
@@ -337,7 +640,6 @@ class _ExpertHourForecastTile extends StatelessWidget {
   Widget build(BuildContext context) {
     const white = Colors.white;
     final hour = dto.date.hour;
-
     final windSpeed = dto.windSpeed ?? 0.0;
     final direction = dto.windDirection ?? 0.0;
 
@@ -352,7 +654,6 @@ class _ExpertHourForecastTile extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Uhrzeit
           Text(
             '${hour.toString().padLeft(2, '0')}:00',
             style: const TextStyle(
@@ -361,10 +662,7 @@ class _ExpertHourForecastTile extends StatelessWidget {
               fontSize: 14,
             ),
           ),
-
           const SizedBox(height: 10),
-
-          // Pfeil (Windrichtung)
           Transform.rotate(
             angle: direction * 3.1415926535897932 / 180,
             child: const Icon(
@@ -373,10 +671,7 @@ class _ExpertHourForecastTile extends StatelessWidget {
               size: 26,
             ),
           ),
-
           const SizedBox(height: 10),
-
-          // Wert
           Text(
             windSpeed.toStringAsFixed(0),
             style: const TextStyle(
@@ -385,10 +680,7 @@ class _ExpertHourForecastTile extends StatelessWidget {
               fontSize: 16,
             ),
           ),
-
           const SizedBox(height: 2),
-
-          // Einheit
           const Text(
             'km/h',
             style: TextStyle(
@@ -405,6 +697,285 @@ class _ExpertHourForecastTile extends StatelessWidget {
 String _formatWaterLevelForFigma(double waterLevelMeters) {
   final cm = waterLevelMeters * 100.0;
   return cm.toStringAsFixed(0);
+}
+
+class ExpertMenuDrawer extends StatelessWidget {
+  final bool temperatur;
+  final bool luftfeuchtigkeit;
+  final bool niederschlag;
+  final bool wolkendichte;
+  final bool gewitter;
+
+  final String selectedModel;
+  final String selectedPage;
+
+  final ValueChanged<bool> onTemperaturChanged;
+  final ValueChanged<bool> onLuftfeuchtigkeitChanged;
+  final ValueChanged<bool> onNiederschlagChanged;
+  final ValueChanged<bool> onWolkendichteChanged;
+  final ValueChanged<bool> onGewitterChanged;
+
+  final ValueChanged<String> onModelChanged;
+  final ValueChanged<String> onPageChanged;
+
+  const ExpertMenuDrawer({
+    super.key,
+    required this.temperatur,
+    required this.luftfeuchtigkeit,
+    required this.niederschlag,
+    required this.wolkendichte,
+    required this.gewitter,
+    required this.selectedModel,
+    required this.selectedPage,
+    required this.onTemperaturChanged,
+    required this.onLuftfeuchtigkeitChanged,
+    required this.onNiederschlagChanged,
+    required this.onWolkendichteChanged,
+    required this.onGewitterChanged,
+    required this.onModelChanged,
+    required this.onPageChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const bg = Color(0xFF2B4544);
+    const tile = Color(0xFF5E8886);
+    const white = Colors.white;
+
+    return Drawer(
+      backgroundColor: bg,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'FOGCAST',
+                  style: TextStyle(
+                    color: white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                const Text(
+                  'Parameterauswahl',
+                  style: TextStyle(
+                    color: white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                _MenuCheckRow(
+                  label: 'Temperatur',
+                  value: temperatur,
+                  onChanged: onTemperaturChanged,
+                ),
+                _MenuCheckRow(
+                  label: 'Luftfeuchtigkeit',
+                  value: luftfeuchtigkeit,
+                  onChanged: onLuftfeuchtigkeitChanged,
+                ),
+                _MenuCheckRow(
+                  label: 'Niederschlag',
+                  value: niederschlag,
+                  onChanged: onNiederschlagChanged,
+                ),
+                _MenuCheckRow(
+                  label: 'Wolkendichte',
+                  value: wolkendichte,
+                  onChanged: onWolkendichteChanged,
+                ),
+                _MenuCheckRow(
+                  label: 'Gewitter',
+                  value: gewitter,
+                  onChanged: onGewitterChanged,
+                ),
+
+                const SizedBox(height: 18),
+
+                SizedBox(
+                  height: 42,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: tile,
+                      foregroundColor: white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'Speichern',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                const Text(
+                  'Modellauswahl',
+                  style: TextStyle(
+                    color: white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                _MenuDropdown(
+                  value: selectedModel,
+                  items: const ['icon_d2', 'icon_eu', 'icon_global'],
+                  onChanged: (v) {
+                    if (v != null) {
+                      onModelChanged(v);
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 28),
+
+                const Text(
+                  'Deine Seiten',
+                  style: TextStyle(
+                    color: white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                _MenuDropdown(
+                  value: selectedPage,
+                  items: const ['Standard', 'Wind', 'Niederschlag'],
+                  onChanged: (v) {
+                    if (v != null) {
+                      onPageChanged(v);
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 28),
+
+                const Icon(Icons.swap_horiz, color: Colors.white70),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuCheckRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _MenuCheckRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const tile = Color(0xFF5E8886);
+    const white = Colors.white;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => onChanged(!value),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: tile,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: value
+                  ? const Icon(Icons.check, color: white, size: 28)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuDropdown extends StatelessWidget {
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+
+  const _MenuDropdown({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const tile = Color(0xFF5E8886);
+    const white = Colors.white;
+
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: tile,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          dropdownColor: tile,
+          icon: const Icon(Icons.keyboard_arrow_down, color: white),
+          style: const TextStyle(
+            color: white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          items: items
+              .map(
+                (item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(item),
+            ),
+          )
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
 }
 
 class _PrimaryPillButton extends StatelessWidget {

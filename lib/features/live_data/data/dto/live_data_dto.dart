@@ -6,6 +6,8 @@ class LiveDataDto {
   final double windDirection; // °
   final double airPressure; // hPa
   final double windGust; // m/s oder 0.0 falls nicht vorhanden
+  //final double waterTemperature;
+
 
   LiveDataDto({
     required this.temperature,
@@ -15,6 +17,7 @@ class LiveDataDto {
     required this.windDirection,
     required this.airPressure,
     required this.windGust,
+    //required this.waterTemperature,
   });
 
   /// Baut ein DTO aus der API-Liste:
@@ -27,6 +30,7 @@ class LiveDataDto {
     double? windDirection;
     double? airPressure;
     double? windGust;
+    //double? waterTemp;
 
     for (final item in items) {
       final map = item as Map<String, dynamic>;
@@ -60,6 +64,9 @@ class LiveDataDto {
         case 'wind_gust':
           windGust = value;
           break;
+        /*case 'water_temperature':
+          waterTemp = value;
+          break;*/
       }
     }
 
@@ -68,6 +75,7 @@ class LiveDataDto {
         water == null ||
         windSpeed == null ||
         windDirection == null ||
+        //waterTemp == null ||
         airPressure == null) {
       throw Exception('LiveData unvollständig');
     }
@@ -77,9 +85,10 @@ class LiveDataDto {
       humidity: hum,
       waterLevel: water,
       windSpeed: windSpeed,
+      //waterTemperature: waterTemp,
       windDirection: windDirection,
       airPressure: airPressure,
-      windGust: windGust ?? 0.0,
+      windGust: windGust ?? 0.0
     );
   }
 }

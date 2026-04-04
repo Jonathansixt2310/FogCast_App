@@ -245,7 +245,7 @@ class DashboardPageState extends ConsumerState<start_page> {
 
                                 return _DayRow(
                                   label: _getWeekdayLabel(dayData.first.date),
-                                  emoji: _weatherEmojiFromCode(mostFrequentCode),
+                                  emoji: _weatherEmojiFromCode(mostFrequentCode, true),
                                   left: '${minT.round()}°',
                                   right: '${maxT.round()}°',
                                   // --- HIER DIE NEUE AKTION EINFÜGEN ---
@@ -417,7 +417,7 @@ class _HourForecastTile extends StatelessWidget {
 
             // Emoji
             Text(
-              _weatherEmojiFromCode(dto.weatherCode),
+              _weatherEmojiFromCode(dto.weatherCode, dto.isDay),
               style: const TextStyle(fontSize: 30),
             ),
 
@@ -599,7 +599,19 @@ IconData _getIconForTemp(double temp) {
   return Icons.ac_unit; // Kalt/Schnee
 }
 
-String _weatherEmojiFromCode(int? code) {
+String _weatherEmojiFromCode(int? code, bool isDay) {
+  if (code == null) return "❔";
+
+    // Nacht-Overrides
+  if (!isDay) {
+    if (code == 0 || code == 1) return "🌙";
+    if (code == 2 || code == 3) return "☁️";
+    if (code >= 61 && code <= 67) return "🌧️";
+    if (code >= 71 && code <= 77) return "🌨️";
+    if (code >= 95) return "⛈️";
+  }
+
+    // Tag (dein bisheriges Mapping)
   const iconMap = {
     0: "☀️",
     1: "🌤️",
@@ -630,7 +642,5 @@ String _weatherEmojiFromCode(int? code) {
     96: "⛈️",
     99: "⛈️",
   };
-
-  if (code == null) return "❔";
   return iconMap[code] ?? "❔";
-}
+  }

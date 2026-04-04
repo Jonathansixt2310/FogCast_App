@@ -2,6 +2,7 @@ import 'dart:io'; // HttpDate
 
 class ForecastDto {
   final DateTime date;
+  final bool isDay;
 
   final double temperature;
   final double? precipitation;
@@ -10,17 +11,22 @@ class ForecastDto {
   final double? humidity;      // relative_humidity_2m
   final double? windSpeed;     // wind_speed_10m (oder wind_speed)
   final double? windDirection;
-  final double? windGust;// wind_direction_10m (optional)
+  final double? windGust;
+  final double? cloudCover;
+  final double? cape;// wind_direction_10m (optional)
 
   ForecastDto({
     required this.date,
     required this.temperature,
+    required this.isDay,
     this.precipitation,
     this.weatherCode,
     this.humidity,
     this.windSpeed,
     this.windDirection,
     this.windGust,
+    this.cloudCover,
+    this.cape,
   });
 
   static double? _numOrNull(dynamic v) {
@@ -59,6 +65,12 @@ class ForecastDto {
         ? (json['wind_gusts_10m'] as num).toDouble()
         : null;
 
+    final isDay = json['is_day'] == 1 || json['is_day'] == 1.0;
+
+    final cloudCover = _numOrNull(json['cloud_cover']);
+
+    final cape = _numOrNull(json['cape']);
+
 
     return ForecastDto(
       date: date,
@@ -69,6 +81,9 @@ class ForecastDto {
       windSpeed: ws,
       windDirection: wd,
       windGust: windGust,
+      isDay: isDay,
+      cloudCover: cloudCover,
+      cape: cape,
     );
   }
 }

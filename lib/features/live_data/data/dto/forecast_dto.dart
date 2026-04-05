@@ -13,7 +13,7 @@ class ForecastDto {
   final double? windDirection;
   final double? windGust;
   final double? cloudCover;
-  final double? cape;// wind_direction_10m (optional)
+  final double? cape;
 
   ForecastDto({
     required this.date,

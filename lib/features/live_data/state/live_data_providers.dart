@@ -13,6 +13,8 @@ import '../data/repositories/live_data_repository.dart';
 import '../data/api/forecast_api.dart';
 import 'package:fog_cast_app/features/live_data/data/repositories/forecast_repository.dart';
 import 'live_data_notifier.dart';
+import '../data/api/history_api.dart';
+import '../data/repositories/history_repository.dart';
 
 /// ------------------------------
 /// LIVE DATA
@@ -60,4 +62,16 @@ StateNotifierProvider<LiveDataNotifier, LiveDataState>((ref) {
     // Nutze hier die zentrale Variable:
     modelId: Environment.defaultWeatherModel,
   );
+});
+/// ------------------------------
+/// HISTORY / ARCHIVE
+/// ------------------------------
+
+final historyApiProvider = Provider<HistoryApi>((ref) {
+  return HistoryApi();
+});
+
+final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
+  final api = ref.watch(historyApiProvider);
+  return HistoryRepository(api);
 });

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fog_cast_app/features/live_data/data/dto/history_dto.dart';
 import '../state/live_data_providers.dart';
 import '../data/dto/forecast_dto.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class expert_page extends ConsumerStatefulWidget {
   const expert_page({super.key});
@@ -18,19 +20,85 @@ class _ExpertPageState extends ConsumerState<expert_page> {
   bool niederschlag = true;
   bool wolkendichte = false;
   bool gewitter = false;
+  bool wasserlevel = true;
+  List<HistoryDto> waterLevelHistory = [];
+  bool isLoadingHistory = false;
 
   String selectedModel = 'icon_d2';
   String selectedPage = 'Standard';
+  Future<void> loadWaterLevelHistory() async {
+    setState(() => isLoadingHistory = true);
+
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(days: 31));
+
+    try {
+      final history = await ref.read(historyRepositoryProvider).getArchiveHistory(
+        parameter: 'water-level',
+        start: start,
+        stop: now,
+        stationId: 1,
+        period: 'd',
+      );
+      debugPrint('loaded history raw count: ${history.length}');
+      if (history.isNotEmpty) {
+        debugPrint('first history item: ${history.first.date} / ${history.first.value}');
+      }
+
+      setState(() {
+        waterLevelHistory = history;
+        isLoadingHistory = false;
+      });
+    } catch (e) {
+      setState(() => isLoadingHistory = false);
+      debugPrint('History Fehler: $e');
+    }
+  }
+  Future<void> _loadMenuPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      temperatur = prefs.getBool('expert_temperatur') ?? true;
+      luftfeuchtigkeit = prefs.getBool('expert_luftfeuchtigkeit') ?? true;
+      niederschlag = prefs.getBool('expert_niederschlag') ?? true;
+      wasserlevel = prefs.getBool('expert_wasserlevel') ?? false;
+      wolkendichte = prefs.getBool('expert_wolkendichte') ?? false;
+      gewitter = prefs.getBool('expert_gewitter') ?? false;
+
+      selectedModel = prefs.getString('expert_selectedModel') ?? 'icon_d2';
+      selectedPage = prefs.getString('expert_selectedPage') ?? 'Standard';
+    });
+  }
+
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    prefs.setBool('temperatur', temperatur);
+    prefs.setBool('luftfeuchtigkeit', luftfeuchtigkeit);
+    prefs.setBool('niederschlag', niederschlag);
+    prefs.setBool('wolkendichte', wolkendichte);
+    prefs.setBool('gewitter', gewitter);
+    prefs.setBool('wasserlevel', wasserlevel);
+
+    prefs.setString('model', selectedModel);
+    prefs.setString('page', selectedPage);
+  }
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(liveDataNotifierProvider.notifier).load());
+    Future.microtask(() async {
+      await _loadMenuPreferences();
+      ref.read(liveDataNotifierProvider.notifier).load();
+      await loadWaterLevelHistory();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(liveDataNotifierProvider);
+    debugPrint('wasserlevel: $wasserlevel');
+    debugPrint('waterLevelHistory length: ${waterLevelHistory.length}');
 
     const bg = Color(0xFF2B4544);
     const tile = Color(0xFF5E8886);
@@ -47,15 +115,42 @@ class _ExpertPageState extends ConsumerState<expert_page> {
         niederschlag: niederschlag,
         wolkendichte: wolkendichte,
         gewitter: gewitter,
+        wasserlevel: wasserlevel,
         selectedModel: selectedModel,
         selectedPage: selectedPage,
-        onTemperaturChanged: (v) => setState(() => temperatur = v),
-        onLuftfeuchtigkeitChanged: (v) => setState(() => luftfeuchtigkeit = v),
-        onNiederschlagChanged: (v) => setState(() => niederschlag = v),
-        onWolkendichteChanged: (v) => setState(() => wolkendichte = v),
-        onGewitterChanged: (v) => setState(() => gewitter = v),
-        onModelChanged: (v) => setState(() => selectedModel = v),
-        onPageChanged: (v) => setState(() => selectedPage = v),
+        onWasserlevelChanged: (v) {
+          setState(() => wasserlevel = v);
+          _savePreferences();
+        },
+        onTemperaturChanged: (v) {
+          setState(() => temperatur = v);
+          _savePreferences();
+        },
+        onLuftfeuchtigkeitChanged:  (v) {
+          setState(() => luftfeuchtigkeit = v);
+          _savePreferences();
+        },
+        onNiederschlagChanged: (v) {
+          setState(() => niederschlag = v);
+          _savePreferences();
+        },
+        onWolkendichteChanged: (v) {
+          setState(() => wolkendichte = v);
+          _savePreferences();
+        },
+        onGewitterChanged: (v) {
+          setState(() => gewitter = v);
+          _savePreferences();
+        },
+        onModelChanged: (v) {
+          setState(() => selectedModel = v);
+          _savePreferences();
+        },
+        onPageChanged: (v) {
+          setState(() => selectedPage = v);
+          _savePreferences();
+        },
+
       ),      appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
@@ -247,6 +342,20 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                               unitX: 'Uhrzeit',
                               valueSelector: (f) => f.precipitation,
                               curved: false,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                        if (wasserlevel) ...[
+                          _ExpertGraphCard(
+                            title: 'Wasserlevel',
+                            child: _ExpertWaterLevelHistoryChart(
+                              data: waterLevelHistory
+                                  .map((e) => _WaterLevelPoint(
+                                date: e.date,
+                                valueCm: e.value,
+                              ))
+                                  .toList(),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -694,6 +803,196 @@ class _ExpertHourForecastTile extends StatelessWidget {
   }
 }
 
+class _ExpertWaterLevelHistoryChart extends StatelessWidget {
+  final List<_WaterLevelPoint> data;
+
+  const _ExpertWaterLevelHistoryChart({
+    required this.data,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const white = Colors.white;
+    const darkText = Colors.black87;
+
+    if (data.length < 2) {
+      return const Center(
+        child: Text(
+          'Keine historischen Wasserlevel-Daten verfügbar',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: white,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    final sorted = [...data]..sort((a, b) => a.date.compareTo(b.date));
+
+    final now = DateTime.now();
+    final startDate = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 30));
+    final endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    final filtered = sorted
+        .where((p) => !p.date.isBefore(startDate) && !p.date.isAfter(endDate))
+        .toList();
+
+    if (filtered.length < 2) {
+      return const Center(
+        child: Text(
+          'Keine historischen Wasserlevel-Daten verfügbar',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: white,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    final spots = <FlSpot>[];
+    for (int i = 0; i < filtered.length; i++) {
+      spots.add(FlSpot(i.toDouble(), filtered[i].valueCm));
+    }
+
+    double minY = filtered.first.valueCm;
+    double maxY = filtered.first.valueCm;
+
+    for (final p in filtered) {
+      if (p.valueCm < minY) minY = p.valueCm;
+      if (p.valueCm > maxY) maxY = p.valueCm;
+    }
+
+    minY = minY.floorToDouble();
+    maxY = maxY.ceilToDouble();
+
+    if (minY == maxY) {
+      minY -= 1;
+      maxY += 1;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
+      child: Stack(
+        children: [
+          LineChart(
+            LineChartData(
+              minX: 0,
+              maxX: (filtered.length - 1).toDouble(),
+              minY: minY,
+              maxY: maxY,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: true,
+                drawHorizontalLine: true,
+                getDrawingHorizontalLine: (value) => FlLine(
+                  color: white.withOpacity(0.18),
+                  strokeWidth: 1,
+                ),
+                getDrawingVerticalLine: (value) => FlLine(
+                  color: white.withOpacity(0.18),
+                  strokeWidth: 1,
+                ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(
+                  color: Colors.black.withOpacity(0.55),
+                  width: 1.4,
+                ),
+              ),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 28,
+                    interval: _intervalForY(maxY - minY),
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        value.toStringAsFixed(0),
+                        style: const TextStyle(
+                          color: darkText,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: _xIntervalForHistory(filtered.length),
+                    reservedSize: 28,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.round();
+                      if (index < 0 || index >= filtered.length) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final d = filtered[index].date;
+                      return Text(
+                        '${d.day}.${d.month}.',
+                        style: const TextStyle(
+                          color: darkText,
+                          fontSize: 11,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: true,
+                  barWidth: 3.5,
+                  color: white,
+                  dotData: const FlDotData(show: false),
+                  belowBarData: BarAreaData(show: false),
+                ),
+              ],
+            ),
+          ),
+
+          const Positioned(
+            left: 4,
+            top: 6,
+            child: Text(
+              'cm',
+              style: TextStyle(
+                color: darkText,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+          const Positioned(
+            right: 8,
+            bottom: 2,
+            child: Text(
+              'Datum',
+              style: TextStyle(
+                color: darkText,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 String _formatWaterLevelForFigma(double waterLevelMeters) {
   final cm = waterLevelMeters * 100.0;
   return cm.toStringAsFixed(0);
@@ -705,6 +1004,7 @@ class ExpertMenuDrawer extends StatelessWidget {
   final bool niederschlag;
   final bool wolkendichte;
   final bool gewitter;
+  final bool wasserlevel;
 
   final String selectedModel;
   final String selectedPage;
@@ -714,7 +1014,7 @@ class ExpertMenuDrawer extends StatelessWidget {
   final ValueChanged<bool> onNiederschlagChanged;
   final ValueChanged<bool> onWolkendichteChanged;
   final ValueChanged<bool> onGewitterChanged;
-
+  final ValueChanged<bool> onWasserlevelChanged;
   final ValueChanged<String> onModelChanged;
   final ValueChanged<String> onPageChanged;
 
@@ -725,6 +1025,7 @@ class ExpertMenuDrawer extends StatelessWidget {
     required this.niederschlag,
     required this.wolkendichte,
     required this.gewitter,
+    required this.wasserlevel,
     required this.selectedModel,
     required this.selectedPage,
     required this.onTemperaturChanged,
@@ -732,6 +1033,7 @@ class ExpertMenuDrawer extends StatelessWidget {
     required this.onNiederschlagChanged,
     required this.onWolkendichteChanged,
     required this.onGewitterChanged,
+    required this.onWasserlevelChanged,
     required this.onModelChanged,
     required this.onPageChanged,
   });
@@ -786,6 +1088,11 @@ class ExpertMenuDrawer extends StatelessWidget {
                   label: 'Niederschlag',
                   value: niederschlag,
                   onChanged: onNiederschlagChanged,
+                ),
+                _MenuCheckRow(
+                  label: 'Wasserlevel',
+                  value: wasserlevel,
+                  onChanged: onWasserlevelChanged,
                 ),
                 _MenuCheckRow(
                   label: 'Wolkendichte',
@@ -1008,4 +1315,20 @@ class _PrimaryPillButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class _WaterLevelPoint {
+  final DateTime date;
+  final double valueCm;
+
+  const _WaterLevelPoint({
+    required this.date,
+    required this.valueCm,
+  });
+}
+double _xIntervalForHistory(int count) {
+  if (count <= 7) return 1;
+  if (count <= 14) return 2;
+  if (count <= 21) return 3;
+  return 5;
 }

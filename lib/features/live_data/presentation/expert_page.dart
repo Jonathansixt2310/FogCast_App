@@ -15,17 +15,21 @@ class expert_page extends ConsumerStatefulWidget {
 
 class _ExpertPageState extends ConsumerState<expert_page> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   bool temperatur = true;
   bool luftfeuchtigkeit = true;
   bool niederschlag = true;
   bool wolkendichte = false;
   bool gewitter = false;
   bool wasserlevel = true;
+
   List<HistoryDto> waterLevelHistory = [];
   bool isLoadingHistory = false;
+  bool _historyLoadTriggered = false;
 
   String selectedModel = 'icon_d2';
   String selectedPage = 'Standard';
+
   Future<void> loadWaterLevelHistory() async {
     setState(() => isLoadingHistory = true);
 
@@ -40,20 +44,16 @@ class _ExpertPageState extends ConsumerState<expert_page> {
         stationId: 1,
         period: 'd',
       );
-      debugPrint('loaded history raw count: ${history.length}');
-      if (history.isNotEmpty) {
-        debugPrint('first history item: ${history.first.date} / ${history.first.value}');
-      }
 
       setState(() {
         waterLevelHistory = history;
         isLoadingHistory = false;
       });
-    } catch (e) {
+    } catch (_) {
       setState(() => isLoadingHistory = false);
-      debugPrint('History Fehler: $e');
     }
   }
+
   Future<void> _loadMenuPreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -61,7 +61,7 @@ class _ExpertPageState extends ConsumerState<expert_page> {
       temperatur = prefs.getBool('expert_temperatur') ?? true;
       luftfeuchtigkeit = prefs.getBool('expert_luftfeuchtigkeit') ?? true;
       niederschlag = prefs.getBool('expert_niederschlag') ?? true;
-      wasserlevel = prefs.getBool('expert_wasserlevel') ?? false;
+      wasserlevel = prefs.getBool('expert_wasserlevel') ?? true;
       wolkendichte = prefs.getBool('expert_wolkendichte') ?? false;
       gewitter = prefs.getBool('expert_gewitter') ?? false;
 
@@ -73,15 +73,15 @@ class _ExpertPageState extends ConsumerState<expert_page> {
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
-    prefs.setBool('temperatur', temperatur);
-    prefs.setBool('luftfeuchtigkeit', luftfeuchtigkeit);
-    prefs.setBool('niederschlag', niederschlag);
-    prefs.setBool('wolkendichte', wolkendichte);
-    prefs.setBool('gewitter', gewitter);
-    prefs.setBool('wasserlevel', wasserlevel);
+    await prefs.setBool('expert_temperatur', temperatur);
+    await prefs.setBool('expert_luftfeuchtigkeit', luftfeuchtigkeit);
+    await prefs.setBool('expert_niederschlag', niederschlag);
+    await prefs.setBool('expert_wasserlevel', wasserlevel);
+    await prefs.setBool('expert_wolkendichte', wolkendichte);
+    await prefs.setBool('expert_gewitter', gewitter);
 
-    prefs.setString('model', selectedModel);
-    prefs.setString('page', selectedPage);
+    await prefs.setString('expert_selectedModel', selectedModel);
+    await prefs.setString('expert_selectedPage', selectedPage);
   }
 
   @override
@@ -97,13 +97,17 @@ class _ExpertPageState extends ConsumerState<expert_page> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(liveDataNotifierProvider);
-    debugPrint('wasserlevel: $wasserlevel');
-    debugPrint('waterLevelHistory length: ${waterLevelHistory.length}');
+
+    if (!_historyLoadTriggered) {
+      _historyLoadTriggered = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await loadWaterLevelHistory();
+      });
+    }
 
     const bg = Color(0xFF2B4544);
     const tile = Color(0xFF5E8886);
     const tileDark = Color(0xFF4F7876);
-    const chartBg = Color(0xFF274847);
     const white = Colors.white;
 
     return Scaffold(
@@ -126,7 +130,7 @@ class _ExpertPageState extends ConsumerState<expert_page> {
           setState(() => temperatur = v);
           _savePreferences();
         },
-        onLuftfeuchtigkeitChanged:  (v) {
+        onLuftfeuchtigkeitChanged: (v) {
           setState(() => luftfeuchtigkeit = v);
           _savePreferences();
         },
@@ -150,8 +154,8 @@ class _ExpertPageState extends ConsumerState<expert_page> {
           setState(() => selectedPage = v);
           _savePreferences();
         },
-
-      ),      appBar: AppBar(
+      ),
+      appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
         centerTitle: true,
@@ -319,7 +323,6 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           ),
                           const SizedBox(height: 14),
                         ],
-
                         if (luftfeuchtigkeit) ...[
                           _ExpertGraphCard(
                             title: 'Luftfeuchtigkeit',
@@ -332,7 +335,6 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           ),
                           const SizedBox(height: 14),
                         ],
-
                         if (niederschlag) ...[
                           _ExpertGraphCard(
                             title: 'Niederschlag',
@@ -349,7 +351,11 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                         if (wasserlevel) ...[
                           _ExpertGraphCard(
                             title: 'Wasserlevel',
-                            child: _ExpertWaterLevelHistoryChart(
+                            child: isLoadingHistory
+                                ? const Center(
+                              child: CircularProgressIndicator(color: Colors.white),
+                            )
+                                : _ExpertWaterLevelHistoryChart(
                               data: waterLevelHistory
                                   .map((e) => _WaterLevelPoint(
                                 date: e.date,
@@ -360,7 +366,6 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           ),
                           const SizedBox(height: 14),
                         ],
-
                         if (wolkendichte) ...[
                           _ExpertGraphCard(
                             title: 'Wolkendichte',
@@ -373,7 +378,6 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           ),
                           const SizedBox(height: 14),
                         ],
-
                         if (gewitter) ...[
                           _ExpertGraphCard(
                             title: 'Gewitter',
@@ -387,7 +391,6 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           ),
                           const SizedBox(height: 14),
                         ],
-
                         _PrimaryPillButton(
                           text: 'Aktualisieren',
                           onPressed: () => ref.read(liveDataNotifierProvider.notifier).load(),
@@ -405,8 +408,6 @@ class _ExpertPageState extends ConsumerState<expert_page> {
     );
   }
 }
-
-/// ---------- UI Bausteine ----------
 
 class _RoundedTile extends StatelessWidget {
   final Widget child;
@@ -650,7 +651,6 @@ class _ExpertLineChart extends StatelessWidget {
               ],
             ),
           ),
-
           Positioned(
             left: 4,
             top: 6,
@@ -663,7 +663,6 @@ class _ExpertLineChart extends StatelessWidget {
               ),
             ),
           ),
-
           Positioned(
             right: 8,
             bottom: 2,
@@ -961,7 +960,6 @@ class _ExpertWaterLevelHistoryChart extends StatelessWidget {
               ],
             ),
           ),
-
           const Positioned(
             left: 4,
             top: 6,
@@ -974,7 +972,6 @@ class _ExpertWaterLevelHistoryChart extends StatelessWidget {
               ),
             ),
           ),
-
           const Positioned(
             right: 8,
             bottom: 2,
@@ -1005,10 +1002,8 @@ class ExpertMenuDrawer extends StatelessWidget {
   final bool wolkendichte;
   final bool gewitter;
   final bool wasserlevel;
-
   final String selectedModel;
   final String selectedPage;
-
   final ValueChanged<bool> onTemperaturChanged;
   final ValueChanged<bool> onLuftfeuchtigkeitChanged;
   final ValueChanged<bool> onNiederschlagChanged;
@@ -1063,7 +1058,6 @@ class ExpertMenuDrawer extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-
                 const Text(
                   'Parameterauswahl',
                   style: TextStyle(
@@ -1073,7 +1067,6 @@ class ExpertMenuDrawer extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 _MenuCheckRow(
                   label: 'Temperatur',
                   value: temperatur,
@@ -1104,9 +1097,7 @@ class ExpertMenuDrawer extends StatelessWidget {
                   value: gewitter,
                   onChanged: onGewitterChanged,
                 ),
-
                 const SizedBox(height: 18),
-
                 SizedBox(
                   height: 42,
                   child: ElevatedButton(
@@ -1127,9 +1118,7 @@ class ExpertMenuDrawer extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 28),
-
                 const Text(
                   'Modellauswahl',
                   style: TextStyle(
@@ -1139,7 +1128,6 @@ class ExpertMenuDrawer extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 _MenuDropdown(
                   value: selectedModel,
                   items: const ['icon_d2', 'icon_eu', 'icon_global'],
@@ -1149,9 +1137,7 @@ class ExpertMenuDrawer extends StatelessWidget {
                     }
                   },
                 ),
-
                 const SizedBox(height: 28),
-
                 const Text(
                   'Deine Seiten',
                   style: TextStyle(
@@ -1161,7 +1147,6 @@ class ExpertMenuDrawer extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 _MenuDropdown(
                   value: selectedPage,
                   items: const ['Standard', 'Wind', 'Niederschlag'],
@@ -1171,9 +1156,7 @@ class ExpertMenuDrawer extends StatelessWidget {
                     }
                   },
                 ),
-
                 const SizedBox(height: 28),
-
                 const Icon(Icons.swap_horiz, color: Colors.white70),
               ],
             ),
@@ -1214,9 +1197,7 @@ class _MenuCheckRow extends StatelessWidget {
                 color: tile,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: value
-                  ? const Icon(Icons.check, color: white, size: 28)
-                  : null,
+              child: value ? const Icon(Icons.check, color: white, size: 28) : null,
             ),
           ),
           const SizedBox(width: 16),
@@ -1326,6 +1307,7 @@ class _WaterLevelPoint {
     required this.valueCm,
   });
 }
+
 double _xIntervalForHistory(int count) {
   if (count <= 7) return 1;
   if (count <= 14) return 2;

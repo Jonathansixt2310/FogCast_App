@@ -10,6 +10,7 @@
 
 import '../api/live_data_api.dart';
 import '../dto/live_data_dto.dart';
+import '../dto/weather_station_dto.dart';
 
 
 class LiveDataRepository {
@@ -38,4 +39,25 @@ class LiveDataRepository {
 
     throw Exception('Unexpected response format: ${raw.runtimeType}');
   }
+
+  Future<WeatherStationDto?> getWeatherStationData() async {
+    final json = await _api.fetchWeatherStationData();
+    if (json == null) return null;
+    return WeatherStationDto.fromJson(json);
+  }
+
+  /*Future<WeatherStationDto?> getWeatherStationData() async {
+    // KOMMENTIERE DEN ECHTEN AUFRUF AUS:
+    // final json = await _api.fetchWeatherStationData();
+
+    // NUTZE DIESE TESTDATEN:
+    final mockJson = {
+      "time": DateTime.now().toIso8601String(),
+      "temperature": 25.5,
+      "humidity": 0.45,
+      "water_temperature": 18.2
+    };
+
+    return WeatherStationDto.fromJson(mockJson);
+  }*/
 }

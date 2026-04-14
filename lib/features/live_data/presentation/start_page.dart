@@ -81,7 +81,7 @@ class DashboardPageState extends ConsumerState<start_page> {
                 );
               }
 
-              if (state.data == null) {
+              if (state.stationData == null) {
                 return Center(
                   child: _PrimaryPillButton(
                     text: 'Daten laden',
@@ -91,7 +91,7 @@ class DashboardPageState extends ConsumerState<start_page> {
                 );
               }
 
-              final data = state.data!;
+              final station = state.stationData!;
               final forecast = state.forecast ?? <ForecastDto>[];
               debugPrint('FORECAST count: ${forecast.length}');
               if (forecast.isNotEmpty) {
@@ -142,7 +142,7 @@ class DashboardPageState extends ConsumerState<start_page> {
                           child: _MetricTile(
                             color: tile,
                             icon: Icons.water_drop,
-                            value: '${data.humidity.toStringAsFixed(0)}',
+                            value: station.humidity.toStringAsFixed(0),
                             unit: '%',
                           ),
                         ),
@@ -151,7 +151,7 @@ class DashboardPageState extends ConsumerState<start_page> {
                           child: _MetricTile(
                             color: tile,
                             icon: Icons.thermostat,
-                            value: '${data.temperature.toStringAsFixed(0)}',
+                            value: station.temperature.toStringAsFixed(0),
                             unit: '°',
                           ),
                         ),
@@ -160,8 +160,8 @@ class DashboardPageState extends ConsumerState<start_page> {
                           child: _MetricTile(
                             color: tile,
                             icon: Icons.waves,
-                            value: _formatWaterLevelForFigma(data.waterLevel),
-                            unit: 'cm',
+                            value: station.waterTemperature.toStringAsFixed(1),
+                            unit: '°C',
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -169,7 +169,10 @@ class DashboardPageState extends ConsumerState<start_page> {
                           child: _MetricTile(
                             color: tile,
                             icon: Icons.air,
-                            value: data.windSpeed.toStringAsFixed(1),
+                            // Wind kommt vom Wettermodell (Forecast)
+                            value: forecast.isNotEmpty
+                                ? (forecast.first.windSpeed?.toStringAsFixed(1) ?? '--')
+                                : '--',
                             unit: 'km/h',
                           ),
                         ),

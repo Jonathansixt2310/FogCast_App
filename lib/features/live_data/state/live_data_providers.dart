@@ -17,15 +17,15 @@ import '../data/api/history_api.dart';
 import '../data/repositories/history_repository.dart';
 
 /// ------------------------------
-/// LIVE DATA
+/// LIVE DATA / WEATHER STATION
 /// ------------------------------
 
-/// API für aktuelle Messwerte (/actual/live-data)
+/// API für aktuelle Messwerte und Wetterstation
 final liveDataApiProvider = Provider<LiveDataApi>((ref) {
   return LiveDataApi();
 });
 
-/// Repository für Live-Daten
+/// Repository für Live-Daten und Stationsdaten
 final liveDataRepositoryProvider = Provider<LiveDataRepository>((ref) {
   final api = ref.watch(liveDataApiProvider);
   return LiveDataRepository(api);
@@ -50,19 +50,20 @@ final forecastRepositoryProvider = Provider<ForecastRepository>((ref) {
 /// NOTIFIER
 /// ------------------------------
 
-/// StateNotifier, der Live-Daten UND Forecast lädt
+/// StateNotifier Provider
+/// Übergibt jetzt explizit die benannten Parameter an den LiveDataNotifier
 final liveDataNotifierProvider =
 StateNotifierProvider<LiveDataNotifier, LiveDataState>((ref) {
   final liveRepo = ref.watch(liveDataRepositoryProvider);
   final forecastRepo = ref.watch(forecastRepositoryProvider);
 
   return LiveDataNotifier(
-    liveRepo,
-    forecastRepo,
-    // Nutze hier die zentrale Variable:
-    modelId: Environment.defaultWeatherModel,
+    liveDataRepository: liveRepo,    // Benannter Parameter für Stations- & Live-Daten
+    forecastRepository: forecastRepo,  // Benannter Parameter für Modell-Vorhersagen
+    modelId: Environment.defaultWeatherModel, // Modell aus der Konfiguration
   );
 });
+
 /// ------------------------------
 /// HISTORY / ARCHIVE
 /// ------------------------------

@@ -32,16 +32,7 @@ class LiveDataApi {
   ///
   /// Diese Methode liefert nur rohes JSON. Das Mapping in typisierte
   /// Datenobjekte erfolgt im Repository.
-  /*Future<dynamic> fetchLiveData() async {
-    final uri = Uri.parse('${Environment.apiBaseUrl}/actual/live-data');
-    final response = await _client.get(uri);
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load live data (${response.statusCode})');
-    }
-
-    return jsonDecode(response.body);
-  }*/
   Future<dynamic> fetchLiveData() async {
     final uri = Uri.parse('${Environment.apiBaseUrl}/actual/live-data');
     final response = await _client.get(uri);
@@ -55,5 +46,45 @@ class LiveDataApi {
     print(response.body);
 
     return jsonDecode(response.body);
+  }
+
+  // Abfrage der Daten der Wetterstation
+  Future<dynamic> fetchWeatherStationData() async {
+    final now = DateTime.now().toUtc();
+    final start = now.subtract(const Duration(hours: 24));
+
+    // Formatierung für die API (YYYY-MM-DDTHH:MM:SSZ)
+    String formatApiDate(DateTime dt) {
+      return dt.toIso8601String().split('.').first + 'Z';
+    }
+
+    final startStr = formatApiDate(start);
+    final stopStr = formatApiDate(now);
+
+    // Basis-URL sauber zusammenbauen
+    final baseUrl = Environment.apiBaseUrl.endsWith('/')
+        ? Environment.apiBaseUrl
+        : '${Environment.apiBaseUrl}/';
+
+    // Der vollständige Link
+    final uri = Uri.parse(
+        '${baseUrl}weatherstation?start=$startStr&stop=$stopStr'
+    );
+
+    // HIER: Den Link in der Konsole ausgeben
+    print('WEATHERSTATION URL: $uri');
+
+    final response = await _client.get(uri);
+
+    // Zusätzliches Logging für die Antwort
+    print('WEATHERSTATION STATUS: ${response.statusCode}');
+
+    if (response.statusCode != 200) {
+      print('WEATHERSTATION ERROR BODY: ${response.body}');
+      throw Exception('Failed to load weatherstation data (${response.statusCode})');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.isNotEmpty ? data.last : null;
   }
 }

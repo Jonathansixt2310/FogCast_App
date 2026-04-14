@@ -210,17 +210,16 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                 );
               }
 
-              if (state.data == null) {
+              if (state.modelData == null) {
                 return Center(
                   child: _PrimaryPillButton(
-                    text: 'Daten laden',
-                    onPressed: () =>
-                        ref.read(liveDataNotifierProvider.notifier).load(),
+                    text: 'Modelldaten laden',
+                    onPressed: () => ref.read(liveDataNotifierProvider.notifier).load(),
                   ),
                 );
               }
 
-              final data = state.data!;
+              final modelData = state.modelData!;
               final forecast = state.forecast ?? <ForecastDto>[];
 
               final now = DateTime.now();
@@ -241,8 +240,8 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           child: _MetricTile(
                             color: tile,
                             icon: Icons.speed,
-                            value: data.windGust != null
-                                ? data.windGust!.toStringAsFixed(1)
+                            value: modelData.windGust != null
+                                ? modelData.windGust!.toStringAsFixed(1)
                                 : '--',
                             unit: 'km/h',
                           ),
@@ -252,7 +251,7 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           child: _MetricTile(
                             color: tile,
                             icon: Icons.compress,
-                            value: data.airPressure.toStringAsFixed(0),
+                            value: modelData.airPressure.toStringAsFixed(0),
                             unit: 'hPa',
                           ),
                         ),
@@ -261,7 +260,7 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           child: _MetricTile(
                             color: tile,
                             icon: Icons.waves,
-                            value: _formatWaterLevelForFigma(data.waterLevel),
+                            value: _formatWaterLevelForFigma(modelData.waterLevel),
                             unit: 'cm',
                           ),
                         ),
@@ -270,7 +269,7 @@ class _ExpertPageState extends ConsumerState<expert_page> {
                           child: _MetricTile(
                             color: tile,
                             icon: Icons.explore,
-                            value: data.windDirection.toStringAsFixed(0),
+                            value: modelData.windDirection.toStringAsFixed(0),
                             unit: '°',
                           ),
                         ),

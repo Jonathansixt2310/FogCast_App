@@ -1,82 +1,82 @@
-/// Repräsentiert den aktuellen Zustand des Live-Data-Features.
-///
-/// Dieser State enthält:
-/// * [isLoading] – ob gerade ein API-Aufruf läuft.
-/// * [errorMessage] – Text, falls beim Laden ein Fehler auftritt.
-/// * [data] – geladenes [LiveDataDto]-Objekt (aktuelle Messwerte).
-/// * [forecast] – Liste von [ForecastDto] (Stunden-Vorhersage).
-///
-/// Die UI liest nur diesen Zustand und entscheidet,
-/// was dargestellt wird.
-
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fog_cast_app/core/config/environment.dart';
-import '../data/repositories/live_data_repository.dart';
-import 'package:fog_cast_app/features/live_data/data/repositories/forecast_repository.dart';
 import '../data/dto/live_data_dto.dart';
+import '../data/dto/weather_station_dto.dart';
 import '../data/dto/forecast_dto.dart';
+import '../data/repositories/live_data_repository.dart';
+import '../data/repositories/forecast_repository.dart';
 
+/// State-Klasse, die alle Datenquellen für die UI bündelt
 class LiveDataState {
   final bool isLoading;
   final String? errorMessage;
-  final LiveDataDto? data;
-  final List<ForecastDto>? forecast;
+  final WeatherStationDto? stationData; // Daten Wetterstation (Temp, Wasser, Feuchte)
+  final LiveDataDto? modelData;         // Modell-Daten (aus /live-data)
+  final List<ForecastDto>? forecast;    // 7-Tage Vorhersage
 
   const LiveDataState({
     this.isLoading = false,
     this.errorMessage,
-    this.data,
+    this.stationData,
+    this.modelData,
     this.forecast,
   });
 
   LiveDataState copyWith({
     bool? isLoading,
     String? errorMessage,
-    LiveDataDto? data,
+    WeatherStationDto? stationData,
+    LiveDataDto? modelData,
     List<ForecastDto>? forecast,
   }) {
     return LiveDataState(
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
-      data: data ?? this.data,
+      errorMessage: errorMessage, // Hier bewusst auf null setzbar
+      stationData: stationData ?? this.stationData,
+      modelData: modelData ?? this.modelData,
       forecast: forecast ?? this.forecast,
     );
   }
 }
 
 class LiveDataNotifier extends StateNotifier<LiveDataState> {
-  final LiveDataRepository _repository;
+  final LiveDataRepository _liveDataRepository;
   final ForecastRepository _forecastRepository;
+  final String _modelId; // z.B. 'icon-eu'
 
-  /// modelId erstmal fix (später konfigurierbar über UI)
-  final String _modelId;
+  LiveDataNotifier({
+    required LiveDataRepository liveDataRepository,
+    required ForecastRepository forecastRepository,
+    required String modelId,
+  })  : _liveDataRepository = liveDataRepository,
+        _forecastRepository = forecastRepository,
+        _modelId = modelId,
+        super(const LiveDataState()) {
+    load();
+  }
 
-  LiveDataNotifier(
-      this._repository,
-      this._forecastRepository, {
-        // Auch hier die zentrale Variable als Fallback nutzen:
-        String modelId = Environment.defaultWeatherModel,
-      }) : _modelId = modelId,
-        super(const LiveDataState());
-
-  /// Lädt Live-Daten + Stunden-Vorhersage neu.
+  /// Lädt Daten von der Wetterstation UND den Wettermodellen
   Future<void> load() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      // parallel: live + forecast (schneller)
+      // Führt alle Requests parallel aus
       final results = await Future.wait([
-        _repository.getLiveData(),
-        _forecastRepository.getForecasts(modelId: _modelId),
+        _liveDataRepository.getWeatherStationData(), // Index 0: WeatherStationDto?
+        _forecastRepository.getForecasts(modelId: _modelId), // Index 1: List<ForecastDto>
+        _liveDataRepository.getLiveData(), // Index 2: LiveDataDto
       ]);
 
-      final liveData = results[0] as LiveDataDto;
-      final forecastData = results[1] as List<ForecastDto>;
+      // Explizites Casting der Ergebnisse aus der Liste
+      final stationResult = results[0] as WeatherStationDto?;
+      final forecastResult = results[1] as List<ForecastDto>;
+      final modelResult = results[2] as LiveDataDto;
 
       state = LiveDataState(
         isLoading: false,
-        data: liveData,
-        forecast: forecastData,
+        stationData: stationResult,
+        forecast: forecastResult,
+        modelData: modelResult,
       );
     } catch (e) {
       state = state.copyWith(
@@ -85,4 +85,7 @@ class LiveDataNotifier extends StateNotifier<LiveDataState> {
       );
     }
   }
+
+  /// Erlaubt das manuelle Aktualisieren (Pull-to-Refresh)
+  Future<void> refresh() => load();
 }
